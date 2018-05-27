@@ -22,9 +22,9 @@ def char2position(imgPath, charColors):
 
 def chars2position(imgPath, char2colors):
     ch2pos = []
-    for ch, colors in char2colors.items():
+    for ch, colors2Votes in char2colors.items():
         # colors(RGB) -> colors(GBR)
-        colorsGBR = np.flip(np.array(colors, dtype=np.uint8), 1)
+        colorsGBR = np.flip(np.array(colors2Votes, dtype=np.uint8), 1)
         bboxesStats = char2position(imgPath, colorsGBR)
         if ch == 'semicolon':
             bboxesStats = [bboxesStats[0]]
