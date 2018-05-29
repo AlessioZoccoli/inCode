@@ -1,5 +1,5 @@
 from collections import defaultdict
-from json import load
+from json import load, dump
 from os import path, getcwd
 from src.lib.image2word import positions2chars, disambiguate
 
@@ -36,6 +36,10 @@ if __name__ == '__main__':
         last = i
         found.add(i)
 
+    wordsPath = path.join(getcwd(), '../../data/words.json')
+    with open(wordsPath, 'w') as words:
+        dump(img2chars, words, indent=4)
+
     notFound = keys - found
     if len(notFound) > 0:
-        print('Not processed photos: #{}, {}'.format(len(notFound), notFound))
+        print('Not processed images: #{}, {}'.format(len(notFound), notFound))

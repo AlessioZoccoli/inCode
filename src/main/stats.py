@@ -32,8 +32,8 @@ if __name__ == '__main__':
     totalTG = float(sum(trigrams.values()))
     trigramsProbability = list(map(lambda g: (g[0], g[1]/totalTG), trigrams.items()))
 
-    # print(sum([el[1] for el in bigramsProbability]))   # 0.9999999999999989
-    # print(sum([el[1] for el in trigramsProbability]))  # 1.0000000000000007
+    print(sum([el[1] for el in bigramsProbability]))   # 0.9999999999999997
+    print(sum([el[1] for el in trigramsProbability]))  # 0.9999999999999999
 
     resPath = path.join(getcwd(), '../../data/ngrams_probability.json')
 

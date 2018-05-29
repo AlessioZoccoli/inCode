@@ -1,9 +1,6 @@
 import cv2
 import numpy as np
 from src.utils import utils as utils
-from os import path, getcwd
-from json import load
-from pprint import pprint
 from itertools import combinations
 
 
@@ -72,15 +69,12 @@ def disambiguate(img, charsList, votedChars):
     :return: same input list except overlapping chars with lower votes
     """
 
-    #dataPath = path.join(getcwd(), '../../data/word_voted.json')  # from connectedChars.py is /Users/<mypath>/inCode/src/main
-    #with open(dataPath, 'r') as f:
-    #    votedChars = load(f)
-
     doubles = set()
 
     for thisChar, thatChar in combinations(charsList, 2):
-        thisVote = votedChars[img][1][thisChar[1]]
-        thatVote = votedChars[img][1][thatChar[1]]
+        # max min
+        thisVote = min(votedChars[img][1][thisChar[1]])
+        thatVote = min(votedChars[img][1][thatChar[1]])
         if thisChar[0] == thatChar[0]:
             if thisVote < thatVote:
                 doubles.add(thatChar)
@@ -88,28 +82,3 @@ def disambiguate(img, charsList, votedChars):
                 doubles.add(thisChar)
 
     return list(filter(lambda ch: ch not in doubles, charsList))
-
-
-
-
-
-
-
-
-
-    """
-    for i in length[0:-1]:
-        for j in length[i+1:]:
-            thisCh = charsList[i]
-            thatCh = charsList[j]
-            # looking for doubles to remove
-            if thisCh not in doubles and thatCh not in doubles:
-                #print(thisCh, '\n', thatCh, '\n ', thisCh[0] == thatCh[0])
-                if thisCh[0] == thatCh[0]:
-                    thisVote = votedChars[img][1][thisCh[1]]
-                    thatVote = votedChars[img][1][thatCh[1]]
-                    # higher vote = take last element, don't take the vote = [0]
-                    ranked = sorted([(thisCh, thisVote), (thatCh, thatVote)], key=lambda x: x[1])
-                    out.add(ranked[-1][0])
-                    doubles.update({d[0] for d in ranked[0:-1]})
-        """
