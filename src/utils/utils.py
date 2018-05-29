@@ -84,5 +84,5 @@ def centroids_bbxes_areas(img):
     """
     _, _, stats, centr = cv2.connectedComponentsWithStats(img)
     # (xCentroid, stats). Ordinamento su xCentroid
-    return sorted([(cent[0], area[4]) for cent, area in zip(centr[1:], stats[1:])])
+    return sorted([(cent[0], cent[1], area[4]) for cent, area in zip(centr[1:], stats[1:])])
 

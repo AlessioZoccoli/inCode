@@ -34,7 +34,7 @@ def aggregateVotes(listCharVotes):
 
 
 if __name__ == '__main__':
-    with open('./data/annotations_gt1.csv', 'r') as annVotesCSV, open('./data/anncolor_by_word_voted.json', 'w') as annVotesJSON:
+    with open('./data/annotations_gt1.csv', 'r') as annVotesCSV, open('./data/word_voted.json', 'w') as annVotesJSON:
 
         annotations = pd.read_csv(annVotesCSV)
         annotations.dropna(inplace=True)
