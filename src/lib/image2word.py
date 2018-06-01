@@ -15,10 +15,10 @@ def char2position(imgPath, charColors):
     image = cv2.imread(imgPath)
 
     mask = utils.mask_by_colors(image, charColors)
-    #mask3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-    #cv2.imshow("images", np.hstack([image, mask3ch]))
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
+    # mask3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+    # cv2.imshow("images", np.hstack([image, mask3ch]))
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
     # centroids + bboxes area
     charpos = utils.centroids_bbxes_areas(mask)
@@ -29,7 +29,7 @@ def char2position(imgPath, charColors):
         for bb in charpos[1:]:
             _min, _max = sorted([curr, bb], key=lambda x: x[2])
             # comparing xCentroid and areas ratio
-            if not((_max[0] - _min[0]) < 13.0 and _min[2]/_max[2] < 0.9):
+            if not(abs(_max[0] - _min[0]) < 13.0 and _min[2]/_max[2] < 0.9):
                 taken.append(bb)
         charpos = taken
     return charpos
@@ -37,7 +37,7 @@ def char2position(imgPath, charColors):
 
 def positions2chars(imgPath, char2colors):
     """
-    This method ssociates to each word-image(file path) a list of its characters with corresponding xCentroid, area
+    This method associates to each word-image(file path) a list of its characters with corresponding xCentroid, area
     and vote
     :param imgPath: file path to the image
     :param char2colors: list of lists.
