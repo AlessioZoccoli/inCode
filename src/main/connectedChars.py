@@ -19,9 +19,9 @@ if __name__ == '__main__':
 
     # output
     img2chars = defaultdict(list)
+    last = 'NULL'
     found = set()
     keys = set(anncolor.keys())
-
 
     for i, val in anncolor.items():
         imgPath = path.join(dataPath, i)
@@ -33,11 +33,12 @@ if __name__ == '__main__':
         else:
             img2chars[i] = result
         img2chars[i] = [ch[1] for ch in img2chars[i]]
+        last = i
         found.add(i)
 
     wordsPath = path.join(getcwd(), '../../data/words.json')
     with open(wordsPath, 'w') as words:
-        dump(list(img2chars.values()), words, indent=4)
+        dump(img2chars, words, indent=4)
 
     notFound = keys - found
     if len(notFound) > 0:

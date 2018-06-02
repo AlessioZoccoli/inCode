@@ -37,9 +37,8 @@ def find_all_colors(img):
             nell'immagine.
     """
     hist = cv2.calcHist([img], [0, 1, 2], None, [256] * 3, [0, 256] * 3)
-    all_colors = np.argwhere(hist != 0)
 
-    return all_colors
+    return hist
 
 
 def sorted_bbxs(img):
@@ -84,34 +83,6 @@ def centroids_bbxes_areas(img):
     :return: lista di centroidi e bounding box. Lista di tuple (centroide, (x, y, width, height, area))
     """
     _, _, stats, centr = cv2.connectedComponentsWithStats(img)
-    #             (xCentroid, yCentroid, area)
+    # (xCentroid, stats). Ordinamento su xCentroid
     return sorted([(cent[0], cent[1], area[4]) for cent, area in zip(centr[1:], stats[1:])])
 
-
-def getMissingElements(image, annotations):
-    """
-    Returns colors and bounding boxes for missing elements
-    :param image: uint8 numpy array, shape (height,width,channels)
-    :param annotations: lists of lists, colors grouped bu char
-    :return: colors and bounding boxes for missing elements
-    """
-    # BGR
-    allColors = find_all_colors(image)
-    allColorsComp = set(tuple(sublist) for sublist in (allColors.tolist()))
-    # RGB -> BGR
-    annotColors = set((tuple(item[::-1])) for sublist in list(annotations) for item in sublist)
-    annotColors.add((255, 255, 255))  # don't include white when applying difference
-
-    differSet = allColorsComp - annotColors
-    if differSet:
-        difference = np.array([np.array(el, dtype=np.uint8) for el in (differSet)], dtype=np.uint8)
-        # processing => BGR
-        missingsMask = mask_by_colors(image, difference)
-        # [(xCentroid, yCentroid, area)]
-        missings = centroids_bbxes_areas(missingsMask)
-        # storing => RGB
-        difference = np.flip(difference, 1)
-    else:
-        difference = []
-        missings = []
-    return {'colors': difference, 'centroids_area': missings}
