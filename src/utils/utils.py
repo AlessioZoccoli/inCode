@@ -37,8 +37,8 @@ def find_all_colors(img):
             nell'immagine.
     """
     hist = cv2.calcHist([img], [0, 1, 2], None, [256] * 3, [0, 256] * 3)
-
-    return hist
+    allColors = np.argwhere(hist != 0)
+    return allColors
 
 
 def sorted_bbxs(img):
@@ -62,12 +62,26 @@ def sorted_bbxs(img):
     return bbxs
 
 
-def centroids(img):
+def bbxesCoverage(img):
     """
-    elenca tutti i centroidi delle componenti connesse di img (sfondo escluso).
+
     :param img: numpy array di tipo uint8, shape (height,width). L'immagine deve
                 essere binaria (0 = assenza di inchiostro, 255 = presenza).
-    :return: lista di centroidi (sfondo escluso). list di valori di tipo numpy.float64
+    :return: una lista di tuple. [(inizioBBOX asse x, fineBBOX asse x)]
+    """
+    _, _, stats, centr = cv2.connectedComponentsWithStats(img)
+    left, width = 0, 2
+    # sorted on xCentroids
+    return sorted([(coord[left], coord[left] + coord[width], centroid) for coord, centroid in zip(stats[1:], centr[1:])], key=lambda s: s[2][0])
+
+
+def centroids(img):
+    """
+    lists all centroids of the connected components (backround excluded)
+
+    :param img: numpy array dtype = uint8, shape (height,width).
+                Binary image (0 = no ink, 255 = inked).
+    :return: centroids list (backgroud excluded). Centroids type is (numpy.float64, numpy.float64)
     """
     _, _, _, centr = cv2.connectedComponentsWithStats(img)
     return centr[1:]
@@ -75,14 +89,41 @@ def centroids(img):
 
 def centroids_bbxes_areas(img):
     """
-    elenca i centroidi e le bounding box delle componenti connesse di un'immagine, l'ordinamento avviene rispetto
-    al centroide, da sinistra a destra (crescente).
+    lists all centroids of the connected components (backround excluded), ordered by X axis of each centroid.
 
-    :param img: numpy array di tipo uint8, shape (height,width). L'immagine deve
-                essere binaria (0 = assenza di inchiostro, 255 = presenza).
-    :return: lista di centroidi e bounding box. Lista di tuple (centroide, (x, y, width, height, area))
+    :param img: numpy array dtype = uint8, shape (height,width).
+                Binary image (0 = no ink, 255 = inked).
+    :return: list of centroids and areas of the bboxes. List is ordered by x coordinate of each centroid.
+             Tuples lists = [(xCentroid, yCentroid, area), ...]
     """
     _, _, stats, centr = cv2.connectedComponentsWithStats(img)
-    # (xCentroid, stats). Ordinamento su xCentroid
     return sorted([(cent[0], cent[1], area[4]) for cent, area in zip(centr[1:], stats[1:])])
 
+
+def getMissingElements(image, annotations):
+    """
+    Returns colors and bounding boxes for missing elements
+    :param image: uint8 numpy array, shape (height,width,channels)
+    :param annotations: lists of lists, colors grouped bu char
+    :return: colors and bounding boxes for missing elements
+    """
+    # BGR
+    allColors = find_all_colors(image)
+    allColorsComp = set(tuple(sublist) for sublist in (allColors.tolist()))
+    # RGB -> BGR
+    annotColors = set((tuple(item[::-1])) for sublist in list(annotations) for item in sublist)
+    annotColors.add((255, 255, 255))  # don't include white when applying difference
+
+    differSet = allColorsComp - annotColors
+    if differSet:
+        difference = np.array([np.array(el, dtype=np.uint8) for el in differSet], dtype=np.uint8)
+        # processing => BGR
+        missingsMask = mask_by_colors(image, difference)
+        # [(xCentroid, yCentroid, area)]
+        missings = centroids_bbxes_areas(missingsMask)
+        # storing => RGB
+        difference = np.flip(difference, 1)
+    else:
+        difference = []
+        missings = []
+    return {'colors': difference, 'centroids_area': missings}

@@ -12,6 +12,7 @@ def getColors(colorsString):
     rgbAlpha = pd.eval(colorsString.replace('["', '[[').replace('","', '],[').replace('"]', ']]'))
     return list(map(lambda col: col[:3], rgbAlpha))
 
+
 def aggregateVotes(listCharVotes):
     """
     aggregateVotes flattens a list of dicts in the form of

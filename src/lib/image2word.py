@@ -1,7 +1,11 @@
+from pprint import pprint
+
 import cv2
 import numpy as np
 from src.utils import utils as utils
 from itertools import combinations
+
+from src.utils.utils import bbxesCoverage
 
 
 def char2position(imgPath, charColors):
@@ -13,7 +17,6 @@ def char2position(imgPath, charColors):
             this list exclude possibile disconnected fragments.
     """
     image = cv2.imread(imgPath)
-
     mask = utils.mask_by_colors(image, charColors)
     #mask3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
     #cv2.imshow("images", np.hstack([image, mask3ch]))
@@ -43,9 +46,10 @@ def positions2chars(imgPath, char2colors):
     :param char2colors: list of lists.
         Each list is a doubleton, two elements only:
             - char
-            - dict, containing colors and vote
+            - colors
     :return: list of tuples in the form of    ((xCentroid, yCentroid, Area), char)
     """
+    toScalar = (lambda el: (np.asscalar(el[0]), np.asscalar(el[1]), np.asscalar(el[2])))
     pos2ch = []
     for ch, colors in char2colors.items():
         # colors(RGB) -> colors(GBR)
@@ -53,7 +57,7 @@ def positions2chars(imgPath, char2colors):
         bboxesStats = char2position(imgPath, colorsGBR)
         if ch == 'semicolon':
             bboxesStats = [bboxesStats[0]]
-        pos2ch.append([(coord, ch) for coord in bboxesStats])
+        pos2ch.append([(toScalar(coord), ch) for coord in bboxesStats])
 
     return sorted([y for x in pos2ch for y in x])
 
@@ -82,3 +86,36 @@ def disambiguate(img, charsList, votedChars):
                 doubles.add(thisChar)
 
     return list(filter(lambda ch: ch not in doubles, charsList))
+
+
+def getConnectedComponents(imageName, annotations, bwmask):
+    """
+    getConnectedComponents('056r_178_258_1393_1827/768_1024_47_181.png', words[imageName], bwmask)
+    {'056r_178_258_1393_1827/768_1024_47_181.png': [
+                ['p', 'a', 'r', 'i_bis', 'u', 'i_bis', 'p', 'n', 'd', 'e'],
+                [['p', 'a', 'r', 'i_bis'],  ['u', 'i_bis', 'p'],  ['n'],  ['d'],  ['e']]
+                ]
+    }
+    :param imageName: string. Relative path/image: dir/name.png
+    :param annotations: words.json. Associates images to the relative transcribed word (as list of centroids and chars)
+    :param bwmask: black and white mask
+    :return: dict of list. Image to [full word, [connected components]]
+    """
+    fullWord = [c[1] for c in annotations]
+    connectedCoords = bbxesCoverage(bwmask)
+    # placeholders for each connected component chars list
+    # placeholder = connectedCoords if fullWord[-1] != 'semicolon' else connectedCoords[:-1]
+    connected = [[] for _ in connectedCoords]
+
+    for centroid, ch in annotations:
+        for i, bbox in enumerate(connectedCoords):
+            start, end, ctr = bbox
+            centroid = centroid[:2]
+            ctr = ctr.tolist()
+            if centroid == ctr or start <= centroid[0] < end:
+                break
+        connected[i].append(ch)
+
+    # cv2.imshow(bwmask)
+    # cv2.waitKey(0)
+    return {imageName: [fullWord, connected]}
