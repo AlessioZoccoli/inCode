@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     font = cv2.FONT_HERSHEY_PLAIN
     # Centroid, area to char
-    centroidsChars = list(map(lambda x: x, positions2chars(imgPath, annot[i])))
+    centroidsChars = positions2chars(imgPath, annot[i])
     lastXCentroid = None
 
     """

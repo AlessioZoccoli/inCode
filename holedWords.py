@@ -14,7 +14,7 @@ if __name__ == '__main__':
     with open(path.join(getcwd(), 'data/anncolor_by_word.json'), 'r') as f:
         annotatJSON = load(f)
 
-    # np digits to python
+    # numpy to python
     toScalar = (lambda x: (np.asscalar(x[0]), np.asscalar(x[1]), np.asscalar(x[2])))
     missings = defaultdict(dict)
 

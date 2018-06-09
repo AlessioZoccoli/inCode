@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     for i, val in anncolor.items():
         imgPath = path.join(dataPath, i)
-        result = list(map(lambda x: x, positions2chars(imgPath, val)))
+        result = positions2chars(imgPath, val)
 
         # doubles checking
         if len(set([ch[0] for ch in result])) < len(result):

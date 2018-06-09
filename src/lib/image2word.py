@@ -18,23 +18,29 @@ def char2position(imgPath, charColors):
     """
     image = cv2.imread(imgPath)
     mask = utils.mask_by_colors(image, charColors)
-    #mask3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-    #cv2.imshow("images", np.hstack([image, mask3ch]))
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
+    # mask3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+    # cv2.imshow("images", np.hstack([image, mask3ch]))
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
     # centroids + bboxes area
     charpos = utils.centroids_bbxes_areas(mask)
+    taken = set()
+    omit = set()
 
     if len(charpos) > 1:
-        curr = charpos[0]
-        taken = [curr]
-        for bb in charpos[1:]:
-            _min, _max = sorted([curr, bb], key=lambda x: x[2])
-            # comparing xCentroid and areas ratio
-            if not((_max[0] - _min[0]) < 13.0 and _min[2]/_max[2] < 0.9):
-                taken.append(bb)
-        charpos = taken
+        for thisBB, thatBB in zip(charpos, charpos[1:]):
+            # comparing areas
+            _min, _max = sorted([thisBB, thatBB], key=lambda el: el[2])
+            if abs(_max[0] - _min[0]) < 13.0 and _min[2]/_max[2] < 0.99:
+                taken.add(_max)
+                omit.add(_min)
+            else:
+                taken.add(_max)
+                taken.add(_min)
+            # print(abs(_max[0] - _min[0]) < 13.0, _min[2] / _max[2] < 0.99,'\n')
+        charpos = sorted([el for el in taken-omit], key=lambda x: x[0])
+
     return charpos
 
 
@@ -77,8 +83,10 @@ def disambiguate(img, charsList, votedChars):
 
     for thisChar, thatChar in combinations(charsList, 2):
         # max min
-        thisVote = min(votedChars[img][1][thisChar[1]])
-        thatVote = min(votedChars[img][1][thatChar[1]])
+        # thisVote = min(votedChars[img][1][thisChar[1]])
+        # thatVote = min(votedChars[img][1][thatChar[1]])
+        thisVote = min(votedChars[img][0][thisChar[1]])
+        thatVote = min(votedChars[img][0][thatChar[1]])
         if thisChar[0] == thatChar[0]:
             if thisVote < thatVote:
                 doubles.add(thatChar)

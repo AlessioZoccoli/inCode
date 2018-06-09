@@ -19,13 +19,17 @@ if __name__ == '__main__':
     # output
     img2chars = defaultdict(list)
 
-    images = ['040v/1270_158_38_61.png', '040v/1243_1517_28_65.png', '040v/159_585_41_63.png', '040v/951_307_48_102.png',
-              '040v/401_532_46_140.png', '040v/145_1688_48_122.png']
+    # images = ['046r/366_404_47_125.png']
+    images = ['040v/274_1193_33_54.png', '040v/1053_636_41_104.png', '040v/159_585_41_63.png',
+              '040v/1243_1517_28_65.png', '040v/1240_309_46_98.png', '040v/159_585_41_63.png',
+              '040v/401_532_46_140.png', '040v/145_1688_48_122.png', '040v/1177_1187_37_68.png',
+              '040v/1194_1139_34_65.png', '046r/120_1563_35_126.png', '046r/366_404_47_125.png',
+              '046r/590_843_31_162.png']
 
     # imagePath: [char:[vote, [..., colors, ...]]]
     for myImage in images:
         imgPath = path.join(dataPath, myImage)
-        result = list(map(lambda x: x, positions2chars(imgPath, anncolor[myImage])))
+        result = positions2chars(imgPath, anncolor[myImage])
 
         # doubles checking
         if len(set([ch[0] for ch in result])) < len(result):
@@ -34,4 +38,4 @@ if __name__ == '__main__':
             img2chars[myImage] = result
 
     pprint(img2chars)
-    #print('\n', [(k,[ch[1] for ch in v]) for k,v in img2chars.items()])
+    # print('\n', [(k,[ch[1] for ch in v]) for k,v in img2chars.items()])

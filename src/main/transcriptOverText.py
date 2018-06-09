@@ -29,12 +29,17 @@ if __name__ == '__main__':
         for coord, ch in annot[im]:
             fontSize = 1
             # reducing annotated char space
-            if ch == 'i_bis' or ch[0] == 't':
+            # TODO run
+            if ch == 'i_bis':
                 selectChar = 'i'
-            elif ch[0] == 's' or ch == 'b_stroke':
+            elif ch[0] == 't':
+                selectChar = 't'
+            elif ch[0] == 's' or ch == 'b_stroke' or ch == 'd_stroke':
                 selectChar = ch[0:3:2]
                 fontSize = 0.7
                 coord = (int(coord[0])-4, int(coord[1]))
+            elif ch == 'pro':
+                fontSize = 0.6
             else:
                 selectChar = ch
             cv2.putText(image, selectChar, (int(coord[0]-3), int(coord[1])), font, fontSize, (0, 0, 0), 1, cv2.LINE_AA)
