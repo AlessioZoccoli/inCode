@@ -16,10 +16,10 @@ if __name__ == '__main__':
 
         imgPath = path.join(dataPath, images[0])
         word = positions2chars(imgPath, annotations[images[0]])
+        """
         meanCentroidXDistance = mean(absolute(diff([el[0][0] for el in word])))
-        omit = []
 
-        print(word)
+        omit = []
         for this, that in combinations(annotations[images[0]].items(), 2):
             overlapping = [c for c in this[1] if c in that[1]]
             if overlapping:
@@ -38,4 +38,5 @@ if __name__ == '__main__':
 
         word = [w for w in word if w not in omit]
         print('\n')
+        """
         print(word)

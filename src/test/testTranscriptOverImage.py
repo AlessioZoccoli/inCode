@@ -40,20 +40,26 @@ if __name__ == '__main__':
 
     for coord, ch in centroidsChars:
         fontSize = 1
-        # handling overlapping chars
-        if lastXCentroid == coord[0]:
-            coord = (coord[0], coord[1]+5)
-        lastXCentroid = coord[0]
         # reducing annotated char space
-        if ch == 'i_bis' or ch[0] == 't':
+        # TODO run
+        if ch == 'i_bis':
             selectChar = 'i'
-        elif ch[0] == 's':
-            selectChar = ch[0:3:2]
+        elif ch[0] == 't':
+            selectChar = 't'
+        elif ch == 'semicolon':
+            selectChar = 'sc'
             fontSize = 0.7
-            coord = (int(coord[0])-4, int(coord[1]))
+            coord = (int(coord[0]) - 4, int(coord[1]))
+        elif ch[:2] == 's_' or ch == 'b_stroke' or ch == 'd_stroke':
+            selectChar = ch[0:3:2]
+            fontSize = 0.6
+            coord = (int(coord[0]) - 4, int(coord[1]))
+        elif ch == 'pro':
+            fontSize = 0.6
+            coord = (int(coord[0]) - 4, int(coord[1]))
         else:
             selectChar = ch
-        cv2.putText(image, selectChar, (int(coord[0]-3), int(coord[1])), font, fontSize, (0, 0, 0), 1, cv2.LINE_AA)
+        cv2.putText(image, selectChar, (int(coord[0] - 3), int(coord[1])), font, fontSize, (0, 0, 0), 1, cv2.LINE_AA)
 
     cv2.imshow('image', image)
     cv2.waitKey(0)

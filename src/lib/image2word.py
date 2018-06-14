@@ -3,8 +3,8 @@ from pprint import pprint
 import cv2
 import numpy as np
 from src.utils import utils as utils
-from itertools import combinations
-
+from itertools import combinations, product
+from numpy import mean, diff, absolute
 from src.utils.utils import bbxesCoverage
 
 
@@ -46,7 +46,7 @@ def char2position(imgPath, charColors):
 
 def positions2chars(imgPath, char2colors):
     """
-    This method ssociates to each word-image(file path) a list of its characters with corresponding xCentroid, area
+    This method associates to each word-image(file path) a list of its characters with corresponding xCentroid, area
     and vote
     :param imgPath: file path to the image
     :param char2colors: list of lists.
@@ -56,8 +56,11 @@ def positions2chars(imgPath, char2colors):
     :return: list of tuples in the form of    ((xCentroid, yCentroid, Area), char)
     """
     toScalar = (lambda el: (np.asscalar(el[0]), np.asscalar(el[1]), np.asscalar(el[2])))
+    # output
     pos2ch = []
-    for ch, colors in char2colors.items():
+    ch2col = char2colors.items()
+
+    for ch, colors in ch2col:
         # colors(RGB) -> colors(GBR)
         colorsGBR = np.flip(np.array(colors, dtype=np.uint8), 1)
         bboxesStats = char2position(imgPath, colorsGBR)
@@ -65,7 +68,27 @@ def positions2chars(imgPath, char2colors):
             bboxesStats = [bboxesStats[0]]
         pos2ch.append([(toScalar(coord), ch) for coord in bboxesStats])
 
-    return sorted([y for x in pos2ch for y in x])
+    # elements of this list will be omitted
+    omit = []
+    meanCentroidXDistance = mean(absolute(diff([el[0][0] for el in pos2ch])))
+
+    for this, that in combinations(ch2col, 2):
+        overlapping = [c for c in this[1] if c in that[1]]
+        if overlapping:
+            # grouping overlapping chars
+            thisBBxes, thatBBxes = [], []
+            for ch in pos2ch:
+                if ch[0][1] == this[0]:
+                    thisBBxes.append(ch)
+                elif ch[0][1] == that[0]:
+                    thatBBxes.append(ch)
+            # choosing bbox to delete by comparing all possible overlapping bboxes
+            for p in product(thisBBxes, thatBBxes):
+                # comparing centroids distance (x axis) -> too short = overlapping bboxes, omit the smaller one
+                if abs(p[0][0][0][0] - p[1][0][0][0]) < meanCentroidXDistance:
+                    omit.append(min(p, key=lambda b: b[0][0][2]))
+
+    return sorted([y for x in pos2ch for y in x if y not in omit])
 
 
 def disambiguate(img, charsList, votedChars):
@@ -112,7 +135,6 @@ def getConnectedComponents(imageName, annotations, bwmask):
     fullWord = [c[1] for c in annotations]
     connectedCoords = bbxesCoverage(bwmask)
     # placeholders for each connected component chars list
-    # placeholder = connectedCoords if fullWord[-1] != 'semicolon' else connectedCoords[:-1]
     connected = [[] for _ in connectedCoords]
 
     for centroid, ch in annotations:
