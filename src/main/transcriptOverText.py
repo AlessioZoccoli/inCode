@@ -38,7 +38,7 @@ if __name__ == '__main__':
                 selectChar = 'sc'
                 fontSize = 0.7
                 coord = (int(coord[0])-4, int(coord[1]))
-            elif ch[0] == 's' or ch == 'b_stroke' or ch == 'd_stroke':
+            elif ch[0] == 's' or ch[2:] == 'stroke':
                 selectChar = ch[0:3:2]
                 fontSize = 0.6
                 coord = (int(coord[0])-4, int(coord[1]))

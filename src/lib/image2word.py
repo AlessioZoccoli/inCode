@@ -33,12 +33,16 @@ def char2position(imgPath, charColors):
             # comparing areas
             _min, _max = sorted([thisBB, thatBB], key=lambda el: el[2])
             if abs(_max[0] - _min[0]) < 13.0 and _min[2]/_max[2] < 0.99:
-                taken.add(_max)
+                # if we sum up _min and _max areas into newMax and we add this to taken
+                # we will eventually have both _max and newMax, let's remove _max first
+                if _max in taken:
+                    taken.remove(_max)
+                newMax = (_max[0], _max[1], _min[2] + _max[2])
+                taken.add(newMax)
                 omit.add(_min)
             else:
                 taken.add(_max)
                 taken.add(_min)
-            # print(abs(_max[0] - _min[0]) < 13.0, _min[2] / _max[2] < 0.99,'\n')
         charpos = sorted([el for el in taken-omit], key=lambda x: x[0])
 
     return charpos
@@ -63,13 +67,15 @@ def positions2chars(imgPath, char2colors):
     for ch, colors in ch2col:
         # colors(RGB) -> colors(GBR)
         colorsGBR = np.flip(np.array(colors, dtype=np.uint8), 1)
+        # print(ch)
         bboxesStats = char2position(imgPath, colorsGBR)
         if ch == 'semicolon':
             bboxesStats = [bboxesStats[0]]
         pos2ch.append([(toScalar(coord), ch) for coord in bboxesStats])
 
+    pos2ch = sorted([y for x in pos2ch for y in x])
     # elements of this list will be omitted
-    omit = []
+    omit = set()
     meanCentroidXDistance = mean(absolute(diff([el[0][0] for el in pos2ch])))
 
     for this, that in combinations(ch2col, 2):
@@ -78,17 +84,22 @@ def positions2chars(imgPath, char2colors):
             # grouping overlapping chars
             thisBBxes, thatBBxes = [], []
             for ch in pos2ch:
-                if ch[0][1] == this[0]:
+                if ch[1] == this[0]:
                     thisBBxes.append(ch)
-                elif ch[0][1] == that[0]:
+                elif ch[1] == that[0]:
                     thatBBxes.append(ch)
+
             # choosing bbox to delete by comparing all possible overlapping bboxes
             for p in product(thisBBxes, thatBBxes):
-                # comparing centroids distance (x axis) -> too short = overlapping bboxes, omit the smaller one
-                if abs(p[0][0][0][0] - p[1][0][0][0]) < meanCentroidXDistance:
-                    omit.append(min(p, key=lambda b: b[0][0][2]))
+                # comparing centroids distance (x axis) -> too short = overlapping bboxes,
+                # omit the smaller one
+                thisX = p[0][0][0]
+                thatX = p[1][0][0]
+                if abs(thisX - thatX) < meanCentroidXDistance:
+                    omit.add(min(p, key=lambda b: b[0][2]))
 
-    return sorted([y for x in pos2ch for y in x if y not in omit])
+    word = [w for w in pos2ch if w not in omit]
+    return word
 
 
 def disambiguate(img, charsList, votedChars):
@@ -99,6 +110,7 @@ def disambiguate(img, charsList, votedChars):
     We want to keep the one with more votes
     :param img: image path
     :param charsList: list of tuples ((<xCentroid, yCentroid, area>),<char>)
+    :param votedChars: mapping between annotated chars and votes for each word
     :return: same input list except overlapping chars with lower votes
     """
 
