@@ -1,3 +1,4 @@
+from os import getcwd
 from pprint import pprint
 
 import cv2
@@ -5,13 +6,13 @@ import numpy as np
 from src.utils import utils as utils
 from itertools import combinations, product
 from numpy import mean, diff, absolute
-from src.utils.utils import bbxesCoverage
+from src.utils.utils import bbxesCoverage, mask_by_colors
 
 
 def char2position(imgPath, charColors):
     """
     returns the centroid and area of the bbox corresponding to the mask of charColors
-    :param imgPath: string. file (relative) path, eg. 040v/159_585_41_63.png
+    :param imgPath: string. file (relative) path, eg. color_words/040v/159_585_41_63.png
     :param charColors: list of [G, B, R] colors
     :return: list of tuples. Each tuple consists in (xCentroid, yCentroid, bboxArea).
             this list exclude possibile disconnected fragments.
@@ -30,16 +31,17 @@ def char2position(imgPath, charColors):
 
     if len(charpos) > 1:
         for thisBB, thatBB in zip(charpos, charpos[1:]):
-            # comparing areas
+            # sort by area
             _min, _max = sorted([thisBB, thatBB], key=lambda el: el[2])
+            # print(_min, _max, '  ##################')
             if abs(_max[0] - _min[0]) < 13.0 and _min[2]/_max[2] < 0.99:
                 # if we sum up _min and _max areas into newMax and we add this to taken
                 # we will eventually have both _max and newMax, let's remove _max first
-                if _max in taken:
-                    taken.remove(_max)
+                omit.add(_max)
+                omit.add(_min)
+
                 newMax = (_max[0], _max[1], _min[2] + _max[2])
                 taken.add(newMax)
-                omit.add(_min)
             else:
                 taken.add(_max)
                 taken.add(_min)
@@ -48,7 +50,7 @@ def char2position(imgPath, charColors):
     return charpos
 
 
-def positions2chars(imgPath, char2colors):
+def positions2chars(imgPath, char2colors, votes='data/word_voted.json'):
     """
     This method associates to each word-image(file path) a list of its characters with corresponding xCentroid, area
     and vote
@@ -57,6 +59,7 @@ def positions2chars(imgPath, char2colors):
         Each list is a doubleton, two elements only:
             - char
             - colors
+    :param votes: Mapping between annotated chars and their votes.
     :return: list of tuples in the form of    ((xCentroid, yCentroid, Area), char)
     """
     toScalar = (lambda el: (np.asscalar(el[0]), np.asscalar(el[1]), np.asscalar(el[2])))
@@ -74,13 +77,27 @@ def positions2chars(imgPath, char2colors):
         pos2ch.append([(toScalar(coord), ch) for coord in bboxesStats])
 
     pos2ch = sorted([y for x in pos2ch for y in x])
+    # print('CURRENT ', getcwd(), '\n')
+    """
+    # doubles checking
+    if len(set([ch[0] for ch in result])) < len(result):
+        img2chars[myImage] = disambiguate(myImage, result, votes)
+    else:
+        img2chars[myImage] = result
+    """
+    #
+    #       overlappings handling
+    #
     # elements of this list will be omitted
     omit = set()
-    meanCentroidXDistance = mean(absolute(diff([el[0][0] for el in pos2ch])))
 
+    meanCentroidXDistance = mean(absolute(diff([el[0][0] for el in pos2ch])))
     for this, that in combinations(ch2col, 2):
         overlapping = [c for c in this[1] if c in that[1]]
         if overlapping:
+            overlGBR = np.flip(np.array(overlapping, dtype=np.uint8), 1)
+            ovrlBBexes = [coordOvr for coordOvr in char2position(imgPath, overlGBR)]
+
             # grouping overlapping chars
             thisBBxes, thatBBxes = [], []
             for ch in pos2ch:
@@ -91,12 +108,17 @@ def positions2chars(imgPath, char2colors):
 
             # choosing bbox to delete by comparing all possible overlapping bboxes
             for p in product(thisBBxes, thatBBxes):
-                # comparing centroids distance (x axis) -> too short = overlapping bboxes,
-                # omit the smaller one
-                thisX = p[0][0][0]
-                thatX = p[1][0][0]
-                if abs(thisX - thatX) < meanCentroidXDistance:
-                    omit.add(min(p, key=lambda b: b[0][2]))
+                #   centroids distance (x axis) -> too short  AND  overlBBx between two chars bbxes  AND   overlBBx area
+                #   is big ====>  bad overlapping, remove!
+                #
+                leftBB, rightBB = sorted([p[0][0], p[1][0]], key=lambda b: b[0])
+                maxOvrl = max(ovrlBBexes, key=lambda x: x[2])
+                meanNeighbourArea = np.mean([leftBB[2], rightBB[2]])
+
+                if (rightBB[0] - leftBB[0]) < meanCentroidXDistance and leftBB[0] <= maxOvrl[0] <= rightBB[0] \
+                        and maxOvrl[2]/meanNeighbourArea > .50:
+                    omitted = min(p, key=lambda b: b[0][2])
+                    omit.add(omitted)
 
     word = [w for w in pos2ch if w not in omit]
     return word
@@ -127,8 +149,8 @@ def disambiguate(img, charsList, votedChars):
                 doubles.add(thatChar)
             elif thisVote > thatVote:
                 doubles.add(thisChar)
-
-    return list(filter(lambda ch: ch not in doubles, charsList))
+    return [ch for ch in charsList if ch not in doubles]
+    # return list(filter(lambda ch: ch not in doubles, charsList))
 
 
 def getConnectedComponents(imageName, annotations, bwmask):

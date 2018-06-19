@@ -3,7 +3,7 @@ from os import path, getcwd
 import cv2
 import numpy as np
 
-from src.lib.image2word import getConnectedComponents
+from src.lib.image2word import getConnectedComponents, positions2chars
 from src.utils.utils import mask_by_colors, bbxesCoverage
 from pprint import pprint
 from collections import defaultdict
@@ -35,12 +35,15 @@ if __name__ == '__main__':
         annoted = load(a)
 
 
-    myImage = '040v/401_532_46_140.png' # '056r_178_258_1393_1827/768_1024_47_181.png'
+    myImage = '056r_178_258_1393_1827/768_1024_47_181.png'  #'040v/401_532_46_140.png'
     myImagePath = path.join(imagesPath, myImage)
+
 
     colors = [np.flip(np.array(color, dtype=np.uint8), 0) for subl in annoted[myImage].values() for color in subl]
     image = cv2.imread(myImagePath)
     mask = mask_by_colors(image, colors)
 
-    res = getConnectedComponents(myImage, words[myImage], mask)
-    pprint(res)
+    pprint(positions2chars(myImagePath, annoted[myImage]))
+    # print('\n\nconnected components:')
+    # res = getConnectedComponents(myImage, words[myImage], mask)
+    # pprint(res)

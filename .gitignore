@@ -42,3 +42,5 @@ tmtagsHistory
 
 data/*
 voteAnnotations.py
+
+config.py
