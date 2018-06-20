@@ -33,13 +33,6 @@ if __name__ == '__main__':
         words = load(w)
         annoted = load(a)
 
-    # myImage = '040v/401_532_46_140.png'  # '056r_178_258_1393_1827/768_1024_47_181.png'
-    # myImagePath = path.join(imagesPath, myImage)
-
-    # colors = [np.flip(np.array(color, dtype=np.uint8), 0) for subl in annoted[myImage].values() for color in subl]
-    # image = cv2.imread(myImagePath)
-    # mask = mask_by_colors(image, colors)
-
     # getConnectedComponents(myImage, words[myImage], mask))
     result = defaultdict(dict)
 

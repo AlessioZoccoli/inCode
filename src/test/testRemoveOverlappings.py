@@ -7,13 +7,14 @@ if __name__ == '__main__':
 
     dataPath = path.join(getcwd(), '../../../color_words/')
     with open(path.join(getcwd(), '../../data/anncolor_by_word.json'), 'r') as ann, \
-            open('../../data/anncolor_by_word_noOverlappings.json', 'w') as annVotesJSON:
+            open('../../data/word_voted.json', 'r') as annVotesJSON:
 
         annotations = load(ann)
+        votes = load(annVotesJSON)
 
         images = ['060v/999_327_30_111.png']
 
         for i in images:
             print('\n\n#################################', i)
             imgPath = path.join(dataPath, i)
-            pprint(positions2chars(imgPath, annotations[i]))
+            pprint(positions2chars(imgPath, annotations[i], votes[i]))

@@ -16,13 +16,14 @@ if __name__ == '__main__':
     imgPath = path.join(imagesPath, i)
     image = cv2.imread(imgPath)
 
-    with open(path.join(dataPath, 'anncolor_by_word.json'), 'r') as ann:
-        annot = load(ann)
+    with open(path.join(dataPath, 'anncolor_by_word.json'), 'r') as annFile,\
+            open(path.join(dataPath, 'word_voted.json'), 'r') as votesFile:
+        annot = load(annFile)
+        votes = load(votesFile)
 
     font = cv2.FONT_HERSHEY_PLAIN
     # Centroid, area to char
-    centroidsChars = positions2chars(imgPath, annot[i])
-    lastXCentroid = None
+    centroidsChars = positions2chars(imgPath, annot[i], votes[i])
 
     """
     Show missing elements
@@ -37,11 +38,9 @@ if __name__ == '__main__':
     """
     show text over word image
     """
-
     for coord, ch in centroidsChars:
         fontSize = 1
-        # reducing annotated char space
-        # TODO run
+        selectChar = ch
         if ch == 'i_bis':
             selectChar = 'i'
         elif ch[0] == 't':
@@ -57,8 +56,7 @@ if __name__ == '__main__':
         elif ch == 'pro':
             fontSize = 0.6
             coord = (int(coord[0]) - 4, int(coord[1]))
-        else:
-            selectChar = ch
+
         cv2.putText(image, selectChar, (int(coord[0] - 3), int(coord[1])), font, fontSize, (0, 0, 0), 1, cv2.LINE_AA)
 
     cv2.imshow('image', image)

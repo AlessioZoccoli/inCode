@@ -28,8 +28,8 @@ if __name__ == '__main__':
 
         for coord, ch in annot[im]:
             fontSize = 1
-            # reducing annotated char space
-            # TODO run
+            selectChar = ch
+
             if ch == 'i_bis':
                 selectChar = 'i'
             elif ch[0] == 't':
@@ -49,8 +49,7 @@ if __name__ == '__main__':
                 selectChar = 'sc'
                 fontSize = 0.7
                 coord = (int(coord[0])-3, int(coord[1]))
-            else:
-                selectChar = ch
+
             cv2.putText(image, selectChar, (int(coord[0]-3), int(coord[1])), font, fontSize, (0, 0, 0), 1, cv2.LINE_AA)
 
         outImagePath = path.join(outFolder, imgName)

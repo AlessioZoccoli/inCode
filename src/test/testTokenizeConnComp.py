@@ -30,9 +30,12 @@ if __name__ == '__main__':
     imagesPath = path.join(getcwd(), '../../../color_words/')
     dataPath = path.join(getcwd(), '../../data/')
 
-    with open(path.join(dataPath, 'words.json'), 'r') as w, open(path.join(dataPath, 'anncolor_by_word.json'),'r') as a:
-        words = load(w)
-        annoted = load(a)
+    with open(path.join(dataPath, 'words.json'), 'r') as wordsFile,\
+            open(path.join(dataPath, 'anncolor_by_word.json'), 'r') as annotFile, \
+            open(path.join(dataPath, 'word_voted.json'), 'r') as votesFile:
+        words = load(wordsFile)
+        annoted = load(annotFile)
+        votes = load(votesFile)
 
 
     myImage = '056r_178_258_1393_1827/768_1024_47_181.png'  #'040v/401_532_46_140.png'
@@ -43,7 +46,7 @@ if __name__ == '__main__':
     image = cv2.imread(myImagePath)
     mask = mask_by_colors(image, colors)
 
-    pprint(positions2chars(myImagePath, annoted[myImage]))
-    # print('\n\nconnected components:')
-    # res = getConnectedComponents(myImage, words[myImage], mask)
-    # pprint(res)
+    pprint(positions2chars(myImagePath, annoted[myImage], votes[myImage]))
+    print('\n\nconnected components:')
+    res = getConnectedComponents(myImage, words[myImage], mask)
+    pprint(res)
