@@ -1,7 +1,7 @@
 from collections import defaultdict
 from json import load, dump
 from os import path, getcwd
-from src.lib.image2word import positions2chars, disambiguate
+from src.lib.image2word import positions2chars
 
 
 if __name__ == '__main__':

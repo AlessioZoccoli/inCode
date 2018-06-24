@@ -5,7 +5,8 @@ import numpy as np
 from src.utils import utils as utils
 from itertools import combinations, product
 from numpy import mean, diff, absolute
-from src.utils.utils import bbxesCoverage, mask_by_colors
+from src.utils.utils import bbxesCoverage
+from nltk import bigrams
 
 
 def char2position(imgPath, charColors):
@@ -206,3 +207,30 @@ def getConnectedComponents(imageName, annotations, bwmask):
     # cv2.imshow(bwmask)
     # cv2.waitKey(0)
     return {imageName: [fullWord, connected]}
+
+
+def translateToken(token):
+    charDict = {
+        'semicolon': ';',
+        'curly_dash': '~',
+        'curl': '@',
+    }
+    try:
+        return charDict[token]
+    except KeyError:
+        if len(token) > 1 and token[1] == '_':
+            return token[0]
+        else:
+            return token
+
+
+def toBigrams(ccomps):
+    bgrams = []
+    for _, comps in ccomps:
+        for cp in comps:
+            if len(cp) == 1:
+                cleanTokens = [(translateToken(cp[0]), '</s>'), ('<s>', translateToken(cp[0]))]
+            else:
+                cleanTokens = [(translateToken(first), translateToken(second)) for first, second in bigrams(cp)]
+            bgrams.extend(cleanTokens)
+    return bgrams
