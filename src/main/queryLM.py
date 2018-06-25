@@ -7,6 +7,7 @@ if __name__ == '__main__':
         pickleFile = path.join(getcwd(), 'data/ngrams.pkl')
 
         with open(pickleFile, 'rb') as p:
-            cpdist = pickle.load(p)
+            langModel = pickle.load(p)
 
-        print(cpdist.getComponentProb('ae'))
+        # print(langModel.getComponentProb('ae'))
+        print(langModel.conditionalProbDist.conditions())

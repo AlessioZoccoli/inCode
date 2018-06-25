@@ -216,21 +216,33 @@ def translateToken(token):
         'curl': '@',
     }
     try:
-        return charDict[token]
+        return [charDict[token]]
     except KeyError:
-        if len(token) > 1 and token[1] == '_':
-            return token[0]
+        if len(token) > 1:
+            if token[1] == '_':
+                return [token[0]]
+            else:
+                return list(token)
         else:
-            return token
+            return [token]
 
 
 def toBigrams(ccomps):
+    """
+    Connected component to bigram.
+    :param ccomps: list of lists, as follows: [ [full word],
+                                                [[ccomp0], [ccomp1], [ccomp2]] ]
+                    each full word is followed by its connected components
+    :return: list of bigrams
+    """
     bgrams = []
+
     for _, comps in ccomps:
-        for cp in comps:
-            if len(cp) == 1:
-                cleanTokens = [(translateToken(cp[0]), '</s>'), ('<s>', translateToken(cp[0]))]
-            else:
-                cleanTokens = [(translateToken(first), translateToken(second)) for first, second in bigrams(cp)]
-            bgrams.extend(cleanTokens)
+        for comp in comps:
+            if comp:
+                for char in comp:
+                    ch = translateToken(char)
+                    whole = ['<s>'] + list(ch) + ['</s>']
+                    chain = [(whole[i], whole[i + 1]) for i in range(len(whole) - 1)]
+                    bgrams.extend(chain)
     return bgrams
