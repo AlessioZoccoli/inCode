@@ -16,7 +16,7 @@ if __name__ == '__main__':
         connectedComps = load(cc)
 
     ccomps = connectedComps.values()
-
     lm = LanguageModel(toBigrams(ccomps))
+
     with open(ngramsFile, 'wb') as ngramsPickle:
         dump(lm, ngramsPickle)

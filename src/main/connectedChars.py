@@ -1,8 +1,9 @@
 from collections import defaultdict
 from json import load, dump
 from os import path, getcwd
-from src.lib.image2word import positions2chars
+from pprint import pprint
 
+from src.lib.image2word import positions2chars, translateToken
 
 if __name__ == '__main__':
     dataPath = path.join(getcwd(), '../../../color_words/')
@@ -17,11 +18,15 @@ if __name__ == '__main__':
     # output
     img2chars = defaultdict(list)
 
+    c = 0
     for i, val in anncolor.items():
         imgPath = path.join(dataPath, i)
         result = positions2chars(imgPath, val, votes[i])
-        img2chars[i] = result
 
-    wordsPath = path.join(getcwd(), '../../data/words.json')
+        cleanResult = [(char[0], ''.join(translateToken(char[1]))) for char in result]
+        img2chars[i] = cleanResult
+
+    wordsPath = path.join(getcwd(), '../../data/words_clean.json')
+
     with open(wordsPath, 'w') as words:
         dump(img2chars, words, indent=4)

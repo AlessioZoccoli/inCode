@@ -20,6 +20,7 @@ class LanguageModel:
         self.conditionalFreqDist = ConditionalFreqDist(self.bigrams)
         self.conditionalProbDist = ConditionalProbDist(self.conditionalFreqDist, MLEProbDist)
 
+
     def getFollowers(self, token: str, showProb=False):
         """
         shows tokens following gram. Use showProb to get tokens plus their related probabilities
@@ -30,6 +31,7 @@ class LanguageModel:
         """
         maxLikehd = self.conditionalProbDist[token]
         return [(sample, maxLikehd.prob(sample)) for sample in maxLikehd.samples()] if showProb else maxLikehd.samples()
+
 
     def getComponentProb(self, component: str):
         """
@@ -44,6 +46,7 @@ class LanguageModel:
         :return: probability in [0.0, 1.0)
         """
         comp2bigrams = bigrams([translateToken(char) for char in component])
+
         if len(component) == 1:
             prob = self.conditionalProbDist['<s>'].prob(component) * self.conditionalProbDist[component].prob('</s>')
         else:

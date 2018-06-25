@@ -1,12 +1,9 @@
-from pprint import pprint
-
 import cv2
 import numpy as np
 from src.utils import utils as utils
 from itertools import combinations, product
 from numpy import mean, diff, absolute
 from src.utils.utils import bbxesCoverage
-from nltk import bigrams
 
 
 def char2position(imgPath, charColors):
@@ -79,6 +76,27 @@ def positions2chars(imgPath, char2colors, votes=None):
 
     pos2ch = sorted([y for x in pos2ch for y in x])
 
+
+    # removing unnecessary strokes
+    # 'l_stroke', 'l'
+    stroked = set()
+    for i in range(len(pos2ch)):
+        if len(pos2ch[i][1]) == 1:
+            try:
+                if pos2ch[i][1][0] == pos2ch[i-1][1][0] and len(pos2ch[i-1][1]) > 1 and pos2ch[i-1][1][1] == '_'\
+                        and pos2ch[i-1][1][0][2]/pos2ch[i][1][0][2] < 1.:
+                    stroked.add(pos2ch[i])
+            except IndexError:
+                pass
+            try:
+                if pos2ch[i][1][0] == pos2ch[i+1][1][0] and len(pos2ch[i+1][1]) > 1 and pos2ch[i+1][1][1] == '_' \
+                        and pos2ch[i+1][1][0][2] / pos2ch[i][1][0][2] < 1.:
+                    stroked.add(pos2ch[i])
+            except IndexError:
+                pass
+
+    pos2ch = [pc for pc in pos2ch if pc not in stroked]
+
     if len(pos2ch) > 1:
         #
         #       overlappings handling
@@ -101,6 +119,7 @@ def positions2chars(imgPath, char2colors, votes=None):
             except ValueError:
                 pass
             i += 1
+
 
         # if length of pos2ch is still >1 then evaluate other cases
         if len(pos2ch) > 1:
@@ -211,12 +230,13 @@ def getConnectedComponents(imageName, annotations, bwmask):
 
 def translateToken(token):
     charDict = {
-        'semicolon': ';',
-        'curly_dash': '~',
-        'curl': '@',
+        'semicolon': ['u', 'es'],
+        'ues': ['u', 'es'],
+        'curl': ['m', 'u', 's'],
+        'curly_dash': []
     }
     try:
-        return [charDict[token]]
+        return charDict[token]
     except KeyError:
         if len(token) > 1:
             if token[1] == '_':
@@ -231,7 +251,7 @@ def toBigrams(ccomps):
     """
     Connected component to bigram.
     :param ccomps: list of lists, as follows: [ [full word],
-                                                [[ccomp0], [ccomp1], [ccomp2]] ]
+                                                [[ccomp0], [ccomp1], [ccomp2]] ]     <<<----- comps
                     each full word is followed by its connected components
     :return: list of bigrams
     """
@@ -241,8 +261,9 @@ def toBigrams(ccomps):
         for comp in comps:
             if comp:
                 for char in comp:
-                    ch = translateToken(char)
-                    whole = ['<s>'] + list(ch) + ['</s>']
-                    chain = [(whole[i], whole[i + 1]) for i in range(len(whole) - 1)]
-                    bgrams.extend(chain)
+                    newCh = translateToken(char)
+                    if newCh != ['']:
+                        whole = ['<s>'] + list(newCh) + ['</s>']
+                        chain = [(whole[i], whole[i + 1]) for i in range(len(whole) - 1)]
+                        bgrams.extend(chain)
     return bgrams

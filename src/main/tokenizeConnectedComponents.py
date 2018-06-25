@@ -29,7 +29,7 @@ if __name__ == '__main__':
     imagesPath = path.join(getcwd(), '../../../color_words/')
     dataPath = path.join(getcwd(), '../../data/')
 
-    with open(path.join(dataPath, 'words.json'), 'r') as w, open(path.join(dataPath, 'anncolor_by_word.json'), 'r') as a:
+    with open(path.join(dataPath, 'words_clean.json'), 'r') as w, open(path.join(dataPath, 'anncolor_by_word.json'), 'r') as a:
         words = load(w)
         annoted = load(a)
 
