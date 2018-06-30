@@ -261,7 +261,7 @@ def toBigrams(ccomps):
         for comp in comps:
             if comp:
                 for char in comp:
-                    newCh = translateToken(char)
+                    newCh = translateToken(char) if len(char) > 1 else char
                     if newCh != ['']:
                         whole = ['<s>'] + list(newCh) + ['</s>']
                         chain = [(whole[i], whole[i + 1]) for i in range(len(whole) - 1)]
