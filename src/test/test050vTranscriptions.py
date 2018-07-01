@@ -41,7 +41,7 @@ if __name__ == '__main__':
                 if 'ues' in autoGen:
                     # esIndices is the list of all 'ues' instances
                     uesIndices = [index for index, value in enumerate(autoGen) if value == 'ues']
-                    permutations = map(lambda prod: list(zip(uesIndices, prod)), product(['ue', 'us'], repeat=3))
+                    permutations = map(lambda prod: list(zip(uesIndices, prod)), product(['ue', 'us'], repeat=len(uesIndices)))
 
                     possibilities = []
                     for perm in permutations:
@@ -53,7 +53,7 @@ if __name__ == '__main__':
                     # associating Levenshteine's edit_distance to each possible word
                     # then picking the most similar
                     bestMatch = min([(image, word, ''.join(p), edit_distance(''.join(p), word)) for p in possibilities],
-                                    key=lambda s: s[1])
+                                    key=lambda s: s[3])
                     result.append(dictFormat(bestMatch))
                 else:
                     autoGenString = ''.join(autoGen)
