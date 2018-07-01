@@ -3,12 +3,14 @@ from json import load, dump
 from os import path, getcwd
 from pprint import pprint
 
-from src.lib.image2word import positions2chars, translateToken
+from src.lib.image2word import positions2chars
+from src.utils.utils import translateToken
 
 if __name__ == '__main__':
-    dataPath = path.join(getcwd(), '../../../color_words/')
+
+    imagesPath = path.join(getcwd(), '../../../color_words/')
     annotationsJSON = path.join(getcwd(), '../../data/anncolor_by_word.json')
-    votesJSON = path.join(getcwd(), '../../data/word_voted.json')
+    votesJSON = path.join(getcwd(), '../../data/words_voted.json')
     print('\npath json exists: {}\n'.format(path.exists(annotationsJSON)))
 
     with open(annotationsJSON, 'r') as f, open(votesJSON, 'r') as v:
@@ -20,7 +22,7 @@ if __name__ == '__main__':
 
     c = 0
     for i, val in anncolor.items():
-        imgPath = path.join(dataPath, i)
+        imgPath = path.join(imagesPath, i)
         result = positions2chars(imgPath, val, votes[i])
 
         cleanResult = [(char[0], ''.join(translateToken(char[1]))) for char in result]

@@ -2,7 +2,7 @@ from nltk import ConditionalFreqDist, ConditionalProbDist, bigrams
 from nltk.probability import MLEProbDist
 from numpy import prod
 
-from src.lib.image2word import translateToken
+from src.utils.utils import translateToken
 
 
 class LanguageModel:
@@ -42,10 +42,11 @@ class LanguageModel:
                                                           V
                                 P('p'|'<s>') * P('i'|'p') * P('z'|'i') * P('z'|'z') * P('a'|'z') * P('a'|'</s>')
 
-        :param component: string. What is the probability of a given component to be valid?
-        :return: probability in [0.0, 1.0)
+        :param component: string. String on which LM is queried to test probability of the same string plausibility.
+        :return: float. Probability of component beign plausible for the model language in [0.0, 1.0)
         """
-        comp2bigrams = bigrams([translateToken(char) for char in component])
+        comp2bigrams = bigrams([translateToken(char) if len(char) > 1 else char
+                                for char in component])
 
         if len(component) == 1:
             prob = self.conditionalProbDist['<s>'].prob(component) * self.conditionalProbDist[component].prob('</s>')

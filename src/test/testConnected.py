@@ -1,13 +1,14 @@
 from collections import defaultdict
 from json import load
 from os import path, getcwd
-from src.lib.image2word import disambiguate, positions2chars
+from src.lib.image2word import positions2chars
 from pprint import pprint
 
 if __name__ == '__main__':
-    dataPath = path.join(getcwd(), '../../../color_words/')
+
+    imagesPath = path.join(getcwd(), '../../../color_words/')
     annotationsJSON = path.join(getcwd(), '../../data/anncolor_by_word.json')
-    votesJSON = path.join(getcwd(), '../../data/word_voted.json')
+    votesJSON = path.join(getcwd(), '../../data/words_voted.json')
     print('\npath json exists: {}\n'.format(path.exists(annotationsJSON)))
 
     with open(annotationsJSON, 'r') as f:
@@ -30,7 +31,7 @@ if __name__ == '__main__':
               '046r/590_843_31_162.png', '055r/442_1503_41_106.png']
 
     for myImage in images:
-        imgPath = path.join(dataPath, myImage)
+        imgPath = path.join(imagesPath, myImage)
         result = positions2chars(imgPath, anncolor[myImage], votes[myImage])
         img2chars[myImage] = result
 

@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     with open(path.join(dataPath, 'words.json'), 'r') as wordsFile,\
             open(path.join(dataPath, 'anncolor_by_word.json'), 'r') as annotFile, \
-            open(path.join(dataPath, 'word_voted.json'), 'r') as votesFile:
+            open(path.join(dataPath, 'words_voted.json'), 'r') as votesFile:
         words = load(wordsFile)
         annoted = load(annotFile)
         votes = load(votesFile)

@@ -1,6 +1,6 @@
 from os import path, getcwd
 import pickle
-
+from pprint import pprint
 
 if __name__ == '__main__':
 
@@ -9,5 +9,12 @@ if __name__ == '__main__':
         with open(pickleFile, 'rb') as p:
             langModel = pickle.load(p)
 
+        lmCPDist = langModel.conditionalProbDist
+        lmConditions = lmCPDist.conditions()
+
         # print(langModel.getComponentProb('ae'))
-        print(langModel.conditionalProbDist.conditions())
+        # print('{}\n'.format(lmConditions))
+
+        for cond in lmConditions:
+            print('\n#######  condition: {}  #######\n'.format(cond))
+            pprint([(s, lmCPDist[cond].prob(s)) for s in lmCPDist[cond].samples()])

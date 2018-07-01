@@ -17,7 +17,7 @@ if __name__ == '__main__':
     image = cv2.imread(imgPath)
 
     with open(path.join(dataPath, 'anncolor_by_word.json'), 'r') as annFile,\
-            open(path.join(dataPath, 'word_voted.json'), 'r') as votesFile:
+            open(path.join(dataPath, 'words_voted.json'), 'r') as votesFile:
         annot = load(annFile)
         votes = load(votesFile)
 

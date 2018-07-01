@@ -7,7 +7,7 @@ if __name__ == '__main__':
 
     dataPath = path.join(getcwd(), '../../../color_words/')
     with open(path.join(getcwd(), '../../data/anncolor_by_word.json'), 'r') as ann, \
-            open('../../data/word_voted.json', 'r') as annVotesJSON:
+            open('../../data/words_voted.json', 'r') as annVotesJSON:
 
         annotations = load(ann)
         votes = load(annVotesJSON)

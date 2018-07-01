@@ -227,43 +227,4 @@ def getConnectedComponents(imageName, annotations, bwmask):
     # cv2.waitKey(0)
     return {imageName: [fullWord, connected]}
 
-
-def translateToken(token):
-    charDict = {
-        'semicolon': ['u', 'es'],
-        'ues': ['u', 'es'],
-        'curl': ['m', 'u', 's'],
-        'curly_dash': []
-    }
-    try:
-        return charDict[token]
-    except KeyError:
-        if len(token) > 1:
-            if token[1] == '_':
-                return [token[0]]
-            else:
-                return list(token)
-        else:
-            return [token]
-
-
-def toBigrams(ccomps):
-    """
-    Connected component to bigram.
-    :param ccomps: list of lists, as follows: [ [full word],
-                                                [[ccomp0], [ccomp1], [ccomp2]] ]     <<<----- comps
-                    each full word is followed by its connected components
-    :return: list of bigrams
-    """
-    bgrams = []
-
-    for _, comps in ccomps:
-        for comp in comps:
-            if comp:
-                for char in comp:
-                    newCh = translateToken(char) if len(char) > 1 else char
-                    if newCh != ['']:
-                        whole = ['<s>'] + list(newCh) + ['</s>']
-                        chain = [(whole[i], whole[i + 1]) for i in range(len(whole) - 1)]
-                        bgrams.extend(chain)
-    return bgrams
+# TODO git push
