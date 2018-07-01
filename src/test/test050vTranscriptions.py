@@ -26,7 +26,7 @@ if __name__ == '__main__':
         labelled = reader(lf)
         autom = load(af)
         fieldnames = ("Image", "Manual", "Automatic", "Distance")
-        resWriter = DictWriter(tst, fieldnames=fieldnames, extrasaction="ignore")
+        resWriter = DictWriter(tst, fieldnames=fieldnames)
 
         # result of the test
         result = []

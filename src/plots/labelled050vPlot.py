@@ -9,24 +9,10 @@ if __name__ == '__main__':
     headers = ('Image', 'Manual', 'Automatic', 'Distance')
     df = pd.read_csv(filePath, names=headers).iloc[1:]
 
-    # aggregate = df.groupby('Distance', as_index=False).agg('count')
-    aggregate = df.groupby('Distance').agg('count') \
+    aggregate = df.groupby('Distance').agg('count')\
         .reset_index()\
-        .apply(lambda x: x.astype(int))
+        .apply(lambda x: x.astype(int)) \
+        .sort_values('Distance')\
 
-    """
-    x = aggregate['Distance']
-    y = aggregate['Image']
-    xPositions = range(len(x))
-    yPositions = range(0, max(y), 10)
-
-    plt.bar(yPositions, y, align='center', alpha=0.5)
-    plt.xticks(xPositions, x)
-    plt.ylabel('Transcript')
-    plt.xlabel('Distances')
-    plt.title('Images to error transcription')
-
-    plt.show()
-    """
-
-    aggregate.plot(x='Distance', y='Image')
+    plt.interactive(True)
+    aggregate.plot(x='Distance', y='Image', kind='bar', legend=False)
