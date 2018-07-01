@@ -34,7 +34,6 @@ if __name__ == '__main__':
 
         for row in labelled:
             image, word = row
-
             try:
                 autoGen = [char[1] for char in autom[image]]
                 # 'ues' token is an aggregate for both 'us' and 'ue'. Thus it must be split
@@ -53,7 +52,7 @@ if __name__ == '__main__':
 
                     # associating Levenshteine's edit_distance to each possible word
                     # then picking the most similar
-                    bestMatch = min([(word, ''.join(p), edit_distance(''.join(p), word)) for p in possibilities],
+                    bestMatch = min([(image, word, ''.join(p), edit_distance(''.join(p), word)) for p in possibilities],
                                     key=lambda s: s[1])
                     result.append(dictFormat(bestMatch))
                 else:
@@ -61,9 +60,10 @@ if __name__ == '__main__':
                     result.append(dictFormat((image, word, autoGenString, edit_distance(autoGenString, word))))
 
             except KeyError:
+                print('not found-> ', image)  # 050v/346_212_42_83.png
                 continue
 
-        print('\n####   {} labels to test ####\n'.format(len(result)))
+        print('\n####   {} labels to test   ####\n'.format(len(result)))
 
         # write out
         resWriter.writeheader()
