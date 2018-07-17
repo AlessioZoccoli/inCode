@@ -1,10 +1,9 @@
 from os import path, getcwd
 import pandas as pd
-from csv import reader
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    filePath = path.join(getcwd(), '../../data/testLabelledData.csv')
+    filePath = path.join(getcwd(), '../../../data/testLabelledData.csv')
 
     headers = ('Image', 'Manual', 'Automatic', 'Distance')
     df = pd.read_csv(filePath, names=headers).iloc[1:]

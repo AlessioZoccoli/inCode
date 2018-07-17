@@ -12,7 +12,7 @@ if __name__ == '__main__':
         lmCPDist = langModel.conditionalProbDist
         lmConditions = lmCPDist.conditions()
 
-        # print(langModel.getComponentProb('ae'))
+        print(langModel.getComponentProb('ciao'), '\n\n')
         # print('{}\n'.format(lmConditions))
 
         for cond in lmConditions:

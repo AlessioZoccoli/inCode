@@ -4,8 +4,7 @@ import cv2
 import numpy as np
 
 from src.lib.image2word import getConnectedComponents
-from src.utils.utils import mask_by_colors, bbxesCoverage
-from pprint import pprint
+from src.utils.utils import mask_by_colors
 from collections import defaultdict
 
 if __name__ == '__main__':
@@ -27,7 +26,7 @@ if __name__ == '__main__':
     """
 
     imagesPath = path.join(getcwd(), '../../../color_words/')
-    dataPath = path.join(getcwd(), '../../data/')
+    dataPath = path.join(getcwd(), '../../../data/')
 
     with open(path.join(dataPath, 'words_clean.json'), 'r') as w, open(path.join(dataPath, 'anncolor_by_word.json'), 'r') as a:
         words = load(w)

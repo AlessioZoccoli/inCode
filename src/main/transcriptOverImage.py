@@ -5,7 +5,7 @@ from json import load
 
 if __name__ == '__main__':
     imagesPath = path.join(getcwd(), '../../../color_words/')
-    dataPath = path.join(getcwd(), '../../data/')
+    dataPath = path.join(getcwd(), '../../../data/')
 
     # transcribed
     with open(path.join(dataPath, 'words.json'), 'r') as ann, open(path.join(dataPath, 'missings.json'), 'r')as m:

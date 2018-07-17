@@ -8,7 +8,7 @@ from src.lib.languageModel import LanguageModel
 
 if __name__ == '__main__':
 
-    dataPath = path.join(getcwd(), '../../data/')
+    dataPath = path.join(getcwd(), '../../../data/')
     connectedCompsFile = path.join(dataPath, 'connectedComps.json')
     ngramsFile = path.join(dataPath, 'ngrams.pkl')
 
