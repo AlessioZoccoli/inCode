@@ -3,7 +3,7 @@ from os import path, mkdir
 from whoosh import qparser
 from whoosh.analysis import SimpleAnalyzer
 from whoosh.index import exists_in, create_in, open_dir
-from whoosh.fields import Schema, ID, TEXT
+from whoosh.fields import Schema, ID, TEXT, NGRAMWORDS
 
 from config import dataPath, images2ConncompEColors
 from pprint import pprint
@@ -19,7 +19,7 @@ def minaceSchema():
     """
     return Schema(
         image=ID(stored=True, unique=True),
-        ccomps=TEXT(sortable=True)
+        ccomps=NGRAMWORDS(minsize=1, maxsize=5, sortable=True)
     )
 
 
@@ -50,7 +50,7 @@ def fillIndex(index):
     with open(images2ConncompEColors, 'r') as icc:
         data = load(icc)
 
-    writer = index.writer(limitmb=512)  # procs=4, limitmb=128)
+    writer = index.writer(procs=4, limitmb=128)
     for image, values in data.items():
         writer.update_document(
             image=image,
@@ -72,10 +72,10 @@ def find(parser, searcher, pattern, taken):
 
     def findRec(p):
         if p != '':
-            if p in taken:
-                out.append((p, '_'))
+            if p in taken or p in out:
+                out.append((p, '_'))    # '_' taken but we want to keep cc ordering
             else:
-                q = parser.parse('*' + p + '*')
+                q = parser.parse(p + '*')
                 result = searcher.search(q)
                 if result:
                     image = result[0]['image']
@@ -90,8 +90,8 @@ def find(parser, searcher, pattern, taken):
 
 
 def query(index, text):
-    char2Images = defaultdict(str)
-    orderedComps = []
+    char2Images = defaultdict(str)  # eg. 'a': 'path/image.png'
+    orderedComps = []   # 'h', 'e', 'll', 'o'
 
     with index.searcher() as searcher:
         qp = qparser.QueryParser('ccomps', index.schema)
@@ -103,11 +103,12 @@ def query(index, text):
             if t not in char2Images.keys():
                 result = find(qp, searcher, t, char2Images.keys())
                 for r in result:
-                    # 0=ccomp, 1=image
-                    char2Images[r[0]] = r[1]
-                    if r not in char2Images.keys():
-                        orderedComps.append(r[0])
-                orderedComps.append('#')  # space between words
+                    if r not in char2Images.keys() and r[1] != '_':  # check for duplicates
+                        char2Images[r[0]] = r[1]  # 0=ccomp, 1=image
+                    orderedComps.append(r[0])
+            else:
+                orderedComps.append(t)
+            orderedComps.append(' ')  # space between words
 
-    # pprint(char2Images)
+    pprint(char2Images)
     print(orderedComps)
