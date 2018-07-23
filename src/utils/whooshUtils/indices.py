@@ -3,10 +3,9 @@ from os import path, mkdir
 from whoosh import qparser
 from whoosh.analysis import SimpleAnalyzer
 from whoosh.index import exists_in, create_in, open_dir
-from whoosh.fields import Schema, ID, TEXT, NGRAMWORDS
+from whoosh.fields import Schema, ID, NGRAMWORDS
 
 from config import dataPath, images2ConncompEColors
-from pprint import pprint
 from json import load
 
 
@@ -34,7 +33,9 @@ def getIndex(indexName, schema=None):
         print("Index {} already exists\n".format(indexName))
     else:
         ix = create_in(indexPath, schema=_schema)
-        print("New index {}\n".format(indexName))
+        print("New index {}".format(indexName))
+        fillIndex(ix)                               # indexing documents
+        print("filling the index\n")
     return ix
 
 
@@ -110,5 +111,4 @@ def query(index, text):
                 orderedComps.append(t)
             orderedComps.append(' ')  # space between words
 
-    pprint(char2Images)
-    print(orderedComps)
+    return char2Images, orderedComps
