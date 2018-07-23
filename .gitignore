@@ -44,3 +44,9 @@ data/*
 voteAnnotations.py
 
 config.py
+
+# Redis #
+redis.conf
+
+
+src/utils/whooshUtils/redisTest.py
