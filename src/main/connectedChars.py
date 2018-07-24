@@ -3,7 +3,7 @@ from json import load, dump
 from os import path, getcwd
 
 from src.lib.image2word import positions2chars
-from src.utils.utils import translateToken
+from src.utils.textProcessing import translateToken
 
 if __name__ == '__main__':
 

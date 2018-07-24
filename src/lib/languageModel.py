@@ -2,7 +2,7 @@ from nltk import ConditionalFreqDist, ConditionalProbDist, bigrams
 from nltk.probability import MLEProbDist
 from numpy import prod
 
-from src.utils.utils import translateToken
+from src.utils.textProcessing import translateToken
 
 
 class LanguageModel:

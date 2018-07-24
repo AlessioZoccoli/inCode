@@ -2,7 +2,7 @@ from json import load
 from os import path, getcwd
 import cv2
 import numpy as np
-from src.utils.utils import mask_by_colors, getMissingElements, find_all_colors
+from src.utils.imageProcessing import mask_by_colors, getMissingElements
 
 if __name__ == '__main__':
     imagesPath = path.join(getcwd(), '../../../color_words/')

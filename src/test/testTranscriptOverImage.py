@@ -1,9 +1,9 @@
-from os import path, getcwd, makedirs, errno
+from os import path, getcwd
 import cv2
 from json import load
 from src.lib.image2word import positions2chars
-from src.utils.utils import getMissingElements, mask_by_colors
-from numpy import  flip
+from src.utils.imageProcessing import mask_by_colors, getMissingElements
+from numpy import flip
 
 
 if __name__ == '__main__':

@@ -3,7 +3,7 @@ from os import path, getcwd
 from pickle import dump
 from pprint import pprint
 
-from src.utils.utils import toBigrams
+from src.utils.textProcessing import toBigrams
 from src.lib.languageModel import LanguageModel
 
 if __name__ == '__main__':

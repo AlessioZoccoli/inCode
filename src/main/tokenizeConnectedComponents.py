@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 from src.lib.image2word import getConnectedComponents
-from src.utils.utils import mask_by_colors
+from src.utils.imageProcessing import mask_by_colors
 from collections import defaultdict
 
 if __name__ == '__main__':

@@ -1,12 +1,11 @@
-from json import load, dump
+from json import load
 from os import path, getcwd
 import cv2
 import numpy as np
 
 from src.lib.image2word import getConnectedComponents, positions2chars
-from src.utils.utils import mask_by_colors, bbxesCoverage
+from src.utils.imageProcessing import mask_by_colors
 from pprint import pprint
-from collections import defaultdict
 
 if __name__ == '__main__':
 

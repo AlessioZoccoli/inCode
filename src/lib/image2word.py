@@ -1,9 +1,10 @@
 import cv2
 import numpy as np
-from src.utils import utils as utils
+
+import src.utils.imageProcessing
 from itertools import combinations, product
 from numpy import mean, diff, absolute
-from src.utils.utils import bbxesCoverage
+from src.utils.imageProcessing import bbxesCoverage
 
 
 def char2position(imgPath, charColors):
@@ -15,14 +16,14 @@ def char2position(imgPath, charColors):
             this list exclude possibile disconnected fragments.
     """
     image = cv2.imread(imgPath)
-    mask = utils.mask_by_colors(image, charColors)
+    mask = src.utils.imageProcessing.mask_by_colors(image, charColors)
     # mask3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
     # cv2.imshow("images", np.hstack([image, mask3ch]))
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
 
     # centroids + bboxes area
-    charpos = utils.centroids_bbxes_areas(mask)
+    charpos = src.utils.imageProcessing.centroids_bbxes_areas(mask)
     taken = set()
     omit = set()
 

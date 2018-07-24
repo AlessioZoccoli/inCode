@@ -2,7 +2,7 @@ from collections import defaultdict
 from json import load, dump
 from os import path, getcwd
 import numpy as np
-from src.utils.utils import getMissingElements
+from src.utils.imageProcessing import getMissingElements
 from cv2 import imread
 
 if __name__ == '__main__':
