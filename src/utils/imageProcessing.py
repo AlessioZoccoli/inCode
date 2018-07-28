@@ -81,7 +81,7 @@ def centroids(img):
 
     :param img: numpy array dtype = uint8, shape (height,width).
                 Binary image (0 = no ink, 255 = inked).
-    :return: centroids list (backgroud excluded). Centroids type is (numpy.float64, numpy.float64)
+    :return: centroids list (backgroud excluded = centr[1:]). Centroids type is (numpy.float64, numpy.float64)
     """
     _, _, _, centr = cv2.connectedComponentsWithStats(img)
     return centr[1:]
@@ -127,3 +127,25 @@ def getMissingElements(image, annotations):
         difference = []
         missings = []
     return {'colors': difference, 'centroids_area': missings}
+
+
+def cropByColor(image, colors):
+    """
+    Crops 'image' by keeping only areas associated with 'colors' via bounding box
+    :param image: str.
+    :param colors: numpy array. Colors as a numpy matrix of BGR values of dtype uint8
+    :return: numpy.array. Black and white image containing the connected component
+    """
+
+    mask = mask_by_colors(image, colors)
+
+    _, _, stats, _ = cv2.connectedComponentsWithStats(mask)
+    compBBX = max(stats[1:], key=lambda s: s[4])                # in case of multiple matches
+    # points of interest
+    left = compBBX[0]
+    right = left + compBBX[2]
+    top = compBBX[1]
+    bottom = top + compBBX[3]
+    selection = mask[top: bottom, left: right]
+    return cv2.bitwise_not(selection)
+

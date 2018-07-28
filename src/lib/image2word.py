@@ -227,5 +227,3 @@ def getConnectedComponents(imageName, annotations, bwmask):
     # cv2.imshow(bwmask)
     # cv2.waitKey(0)
     return {imageName: [fullWord, connected]}
-
-# TODO git push

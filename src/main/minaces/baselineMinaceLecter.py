@@ -3,19 +3,23 @@ from pprint import pprint
 
 from src.utils.textProcessing import filteringChars
 
+
 """
-length      count
-of cc
-     1:     17343,
-     2:     5469,
-     3:     1940,
-     4:     764,
-     5:     380,
-     6:     132,
-     7:     64,
-     8:     21,
-     9:     10,
-     10:    2
+          STATS
+
+    length      count
+    of cc
+         1:     17343,
+         2:     5469,
+         3:     1940,
+         4:     764,
+         5:     380,
+         6:     132,
+         7:     64,
+         8:     21,
+         9:     10,
+         10:    2
+         
 """
 
 
