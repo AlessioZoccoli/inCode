@@ -1,13 +1,13 @@
 from collections import defaultdict
 from itertools import combinations
 from json import load
-from os import path, getcwd
+from os import path
 from pprint import pprint
+from config import dataPath
 
 if __name__ == '__main__':
 
     # imagesPath = path.join(getcwd(), '../../color_words/')
-    dataPath = path.join(getcwd(), '../data/')
     # imageName = '048r/86_134_36_166.png' # '056r_178_258_1393_1827/768_1024_47_181.png'
 
     with open(path.join(dataPath, 'anncolor_by_word.json'), 'r') as f:

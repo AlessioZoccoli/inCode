@@ -89,7 +89,7 @@ def centroids(img):
 
 def centroids_bbxes_areas(img):
     """
-    lists all centroids of the connected components (backround excluded), ordered by X axis of each centroid.
+    Lists all centroids and areas of the connected components (backround excluded), ordered by X axis of each centroid.
 
     :param img: numpy array dtype = uint8, shape (height,width).
                 Binary image (0 = no ink, 255 = inked).
@@ -98,6 +98,21 @@ def centroids_bbxes_areas(img):
     """
     _, _, stats, centr = cv2.connectedComponentsWithStats(img)
     return sorted([(cent[0], cent[1], area[4]) for cent, area in zip(centr[1:], stats[1:])])
+
+
+def bbxes_data(img):
+    """
+    For each bbox (backround excluded), ordered by X axis of each centroid, bbxes_data returns
+    centroid coordinates, area, width, height (approx) start and end of the bbox on x axis.
+    :param img: numpy array dtype = uint8, shape (height,width).
+                Binary image (0 = no ink, 255 = inked).
+    :return: list of centroids and areas of the bboxes. List is ordered by x coordinate of each centroid.
+             Tuples lists = [(xCentroid, yCentroid, area, width, height, xStart, xEnd, yStart, yEnd), ...]
+    """
+    _, _, stats, centr = cv2.connectedComponentsWithStats(img)
+    #              (xCentr,  yCentr,   area,    width,  height,   xStart,   xEnd            , yStart,   yEnd           )
+    return sorted([(cent[0], cent[1], stat[4], stat[2], stat[3], stat[0], stat[0] + stat[2], stat[1], stat[1] + stat[3])
+                   for cent, stat in zip(centr[1:], stats[1:])])
 
 
 def getMissingElements(image, annotations):
@@ -117,12 +132,9 @@ def getMissingElements(image, annotations):
     differSet = allColorsComp - annotColors
     if differSet:
         difference = np.array([np.array(el, dtype=np.uint8) for el in differSet], dtype=np.uint8)
-        # processing => BGR
-        missingsMask = mask_by_colors(image, difference)
-        # [(xCentroid, yCentroid, area)]
-        missings = centroids_bbxes_areas(missingsMask)
-        # storing => RGB
-        difference = np.flip(difference, 1)
+        missingsMask = mask_by_colors(image, difference)        # processing => BGR
+        missings = centroids_bbxes_areas(missingsMask)          # [(xCentroid, yCentroid, area)]
+        difference = np.flip(difference, 1)                     # storing => RGB
     else:
         difference = []
         missings = []
@@ -131,7 +143,8 @@ def getMissingElements(image, annotations):
 
 def cropByColor(image, colors):
     """
-    Crops 'image' by keeping only areas associated with 'colors' via bounding box
+    Crops 'image' by keeping only areas associated with 'colors' via bounding box.
+    Outputs a BW image where selected characters/colors are white and background is black
     :param image: str.
     :param colors: numpy array. Colors as a numpy matrix of BGR values of dtype uint8
     :return: numpy.array. Black and white image containing the connected component
@@ -146,6 +159,8 @@ def cropByColor(image, colors):
     right = left + compBBX[2]
     top = compBBX[1]
     bottom = top + compBBX[3]
-    selection = mask[top: bottom, left: right]
-    return cv2.bitwise_not(selection)
+    return mask[top: bottom, left: right]
 
+
+def background(width=720, height=890, color=0):
+    return np.zeros((height, width), dtype=np.uint8) if color == 0 else np.full((height, width), 255, dtype=np.uint8)

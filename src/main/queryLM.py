@@ -1,20 +1,17 @@
-from os import path, getcwd
 import pickle
 from pprint import pprint
+from config import ligatureModelFile
+
 
 if __name__ == '__main__':
 
-        pickleFile = path.join(getcwd(), 'data/ngrams.pkl')
+        with open(ligatureModelFile, 'rb') as p:
+            ligMod = pickle.load(p)
 
-        with open(pickleFile, 'rb') as p:
-            langModel = pickle.load(p)
+        print(ligMod.getComponentProb('ciao'), '\n\n')
 
-        lmCPDist = langModel.conditionalProbDist
-        lmConditions = lmCPDist.conditions()
+        print("Followers of q (bigrams:")
+        pprint(ligMod.getFollowers(token='q', gram=2))
 
-        print(langModel.getComponentProb('ciao'), '\n\n')
-        # print('{}\n'.format(lmConditions))
-
-        for cond in lmConditions:
-            print('\n#######  condition: {}  #######\n'.format(cond))
-            pprint([(s, lmCPDist[cond].prob(s)) for s in lmCPDist[cond].samples()])
+        print('\n20 most frequent 3 grams')
+        pprint(ligMod.mostFrequent(gram=3))

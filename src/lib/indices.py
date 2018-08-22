@@ -1,13 +1,13 @@
 from collections import defaultdict
 from random import choice
-from nltk.util import ngrams
+from nltk.util import ngrams, everygrams
 from os import path, mkdir
 from whoosh import qparser
-from whoosh.analysis import SimpleAnalyzer
+from whoosh.analysis import KeywordAnalyzer
 from whoosh.index import exists_in, create_in, open_dir
-from whoosh.fields import Schema, ID, NGRAMWORDS
+from whoosh.fields import Schema, ID, KEYWORD, STORED
 
-from config import dataPath, images2ConncompEColors
+from config import dataPath, connCompsJSON
 from json import load
 
 
@@ -15,12 +15,17 @@ def minaceSchema():
     """
     Defining a basic schema for the index.
     fields:
-        - image = will be in the query output (stored) and is unique
-        - ccomps = TEXT may be queried but not returned when retrieving results
+        image: path
+        ccompsHead: Components in the middle of a transcribed word, or single-grams if thei are not in ('s', 'e', 'l', 'm')
+        ccompsTail: Ending tokens
+        ccompsHeadTrace: Positional index of the tokens and their compounds
+
     """
     return Schema(
         image=ID(stored=True, unique=True),
-        ccomps=NGRAMWORDS(minsize=1, maxsize=5, sortable=True)
+        ccompsHead=KEYWORD(stored=True, sortable=True),
+        ccompsTail=KEYWORD(stored=True, sortable=True),
+        ccompsHeadTrace=STORED,
     )
 
 
@@ -32,41 +37,104 @@ def getIndex(indexName, schema=None):
         mkdir(indexPath)
     if exists_in(indexPath):
         ix = open_dir(indexPath)
-        print("Index {} already exists\n".format(indexName))
+        print("###  Index {} already exists\n".format(indexName))
     else:
         ix = create_in(indexPath, schema=_schema)
-        print("New index {}".format(indexName))
-        fillIndex(ix)                               # indexing documents
-        print("filling the index\n")
+        print("###  New index {}".format(indexName))
+        fillIndex(ix)
+        print("###  Filling the index\n")
     return ix
 
 
 def fillIndex(index):
     """
-    Parameters of the indexed document:
-    image: path
-    spelledWord: 1-grams forming each word
-    ccompsLong: "longer" connected components, 1-grams will be only searched in spelledWord
-
     :param index: index
     :return: None
+
+        example:
+            query('cia')
+
+            result =
+                {'cia': ('055r/526_989_46_120.png',
+                             (('du', (((1, 0), (1, 1)),)),
+                              ('f', (((0, 0),),)),
+                              ('fi', (((0, 0), (0, 1)),)),
+                              ('i', (((0, 1),), ((2, 1),))),
+                              ('c', (((2, 0),),)),
+                              ('ci', (((2, 0), (2, 1)),)),
+                              ('d', (((1, 0),),)),
+                              ('cia', (((2, 0), (2, 1), (2, 2)),)),
+                              ('ia', (((2, 1), (2, 2)),)),
+                              ('a', (((2, 2),),)),
+                              ('u', (((1, 1),),))),
+                             (-1, -1)),
+                 '...': ...
+                 }
+
+            Getting 'cia' bbxes:
+
+                       "c                                   i                    a"
+                        |                                                       |
+                        dict(cia['cia'][1])['cia'][0][0]                dict(cia['cia'][1])['cia'][0][-1]
+
     """
-    with open(images2ConncompEColors, 'r') as icc:
+
+    with open(connCompsJSON, 'r') as icc:
         data = load(icc)
 
     writer = index.writer(procs=4, limitmb=128)
-    for image, values in data.items():
-        writer.update_document(
-            image=image,
-            ccomps=values['ccomps']
-        )
+
+    for image, annot in data.items():
+        head, tail = "", ""
+        length = len(annot)
+
+        if (len(annot[-1]) == 1 or len(annot[-1][-1]) == 1) and annot[-1][0] in ('s', 'e', 'l', 'm'):
+            tail = annot[-1][-1]
+
+        # mapping each non ending token to its position in the annotation
+        headPositions = [[g for g in gram]
+                         for gram in [everygrams([(ind, i) for i, e in enumerate(el)
+                                                  if not (ind == length - 1 and i == len(el) - 1 and
+                                                          e in ('s', 'e', 'l', 'm', 'semicolon'))],
+                                                 max_len=10) for ind, el in enumerate(annot)]]
+
+        hCombinations = tuple([tuple(["".join([annot[comb[0]][comb[1]] for comb in combs]) for combs in combsCC])
+                               for combsCC in headPositions])
+
+        # indexable string
+        head = " ".join([" ".join([h for h in hcomp]) for hcomp in hCombinations])
+
+        # (char_i, position in values) -> cctrace = (char_i, [positionS in values])
+        ch2position = [subdict for subdict in [list(zip(el[0], list(el[1])))
+                                               for el in zip(hCombinations, headPositions)]]
+        ccTrace = defaultdict(list)
+        for c2p in ch2position:
+            for ch, pos in c2p:
+                ccTrace[ch].append(pos)
+
+
+        if tail:
+            writer.update_document(
+                image=image,
+                ccompsHead=head,
+                ccompsTail=tail,
+                ccompsHeadTrace=tuple((k, tuple(v)) for k, v in ccTrace.items() if v)  # tuple are pickable, lists are not
+            )
+        else:
+            writer.update_document(
+                image=image,
+                ccompsHead=head,
+                ccompsHeadTrace=tuple(((k, v) for k, v in ccTrace.items()))
+            )
+
     writer.commit()
 
 
-def find(parser, searcher, pattern, taken):
+def find(defaultParser, searcher, pattern, taken, secondaryParser=None):
     """
 
-    :param parser: query parser
+    :param secondaryParser:
+    :param defaultParser: query parser
     :param searcher: index.searcher
     :param pattern: a.k.a token
     :param taken: already collected patterns
@@ -79,19 +147,54 @@ def find(parser, searcher, pattern, taken):
                                   h        e      l      lo
                                                         / \
                                                        l   o
+
+    On picking a token:
+
+                defaultdict(list,
+                    {'e': [],
+                     'per': [((0, 0),)],
+                     'pert': [((0, 0), (0, 1))],
+                     'pertu': [((0, 3),), ((0, 0), (0, 1), (0, 2))],
+                     'pertupertu': [((0, 0), (0, 1), (0, 2), (0, 3))],
+                     'r': [((1, 0),), ((1, 1),)],
+                     'rr': [((1, 0), (1, 1))],
+                     't': [((0, 1),)],
+                     'tu': [((0, 1), (0, 2))],
+                     'tupertu': [((0, 1), (0, 2), (0, 3))],
+                     'u': [((0, 2),)],
+                     'upertu': [((0, 2), (0, 3))]})
+
+        choice(ccTrace['pertu']):
+            ((0, 3),)    or  ((0, 0), (0, 1), (0, 2))
     """
     out = []
 
     def findRec(p):
+
         if p != '':
             if p in taken or p in out:
-                out.append((p, '_'))    # '_' taken cc, but we want to keep cc ordering
+                out.append((p, '_'))  # '_' taken cc, but we want to keep cc ordering
             else:
-                q = parser.parse(p + '*')
-                result = searcher.search(q, limit=4)
+                q = defaultParser.parse(p)
+                result = searcher.search(q)
+
                 if result:
-                    image = choice(list(result))['image']
-                    out.append((p, image))
+                    randchoice = choice(list(result))
+                    # if defaultParser is tailParser and there is a result. Tail is True
+                    metadata = [randchoice['image'], (-1, -1)] if secondaryParser \
+                        else [randchoice['image'], choice(dict(randchoice['ccompsHeadTrace'])[p])]
+                    out.append((p, *metadata))
+
+                elif not result and secondaryParser:            # not in tail, search in head
+                    q = secondaryParser.parse(p)
+                    result = searcher.search(q)
+                    if result:
+                        randchoice = choice(list(result))
+                        out.append((p, randchoice['image'], choice(dict(randchoice['ccompsHeadTrace'])[p])))
+                    else:
+                        half = round(len(p) / 2)
+                        findRec(p[:half])
+                        findRec(p[half:])
                 else:
                     half = round(len(p) / 2)
                     findRec(p[:half])
@@ -100,40 +203,31 @@ def find(parser, searcher, pattern, taken):
     findRec(pattern)
     return out
 
-"""
-def query(index, text):
-    char2Images = defaultdict(str)  # eg. 'a': 'path/image.png'
-    orderedComps = []   # 'h', 'e', 'll', 'o'
-
-    with index.searcher() as searcher:
-        qp = qparser.QueryParser('ccomps', index.schema)
-        qp.add_plugin(qparser.RegexPlugin())
-        analyze = SimpleAnalyzer()
-
-        for token in analyze(text):
-            t = token.text
-            if t not in char2Images.keys():
-                result = find(qp, searcher, t, char2Images.keys())
-                for r in result:
-                    if r not in char2Images.keys() and r[1] != '_':  # check for duplicates
-                        char2Images[r[0]] = r[1]  # 0=ccomp, 1=image
-                    orderedComps.append(r[0])
-            else:
-                orderedComps.append(t)
-            orderedComps.append(' ')  # space between words
-
-    return char2Images, orderedComps
-"""
-
 
 def query(index, text):
-    char2Images = defaultdict(str)  # eg. 'a': 'path/image.png'
-    orderedComps = []   # 'h', 'e', 'll', 'o'
+    """
+    >> query(MyIndex, 'ciao')
+
+            defaultdict(<class 'list'>,
+                      {'cia': ['059r/413_780_36_104.png', ((1, 2), (1, 3), (1, 4))],
+                      'o': ('051r/751_1468_23_33.png', (-1, -1))})                      # clearly tail
+
+            ['cia', 'o']
+
+    :param index:
+    :param text:
+    :return:
+
+    """
+    char2Images = defaultdict(list)  # eg. 'a': 'path/image.png'
+    orderedComps = []  # 'h', 'e', 'll', 'o'
 
     with index.searcher() as searcher:
-        qp = qparser.QueryParser('ccomps', index.schema)
-        qp.add_plugin(qparser.RegexPlugin())
-        analyze = SimpleAnalyzer()
+        qpHead = qparser.QueryParser('ccompsHead', index.schema)
+        qpTail = qparser.QueryParser('ccompsTail', index.schema)
+        qpHead.add_plugin(qparser.RegexPlugin())
+        qpTail.add_plugin(qparser.RegexPlugin())
+        analyze = KeywordAnalyzer()
 
         for token in analyze(text):
             t = token.text
@@ -141,7 +235,7 @@ def query(index, text):
                 # first, we search for all possible n-grams for a given token
                 allGrams = []
                 for n in range(len(t)):
-                    for ngram in ngrams(t, len(t)-n):
+                    for ngram in ngrams(t, len(t) - n):
                         allGrams.append(''.join(str(i) for i in ngram))
 
                 """
@@ -150,19 +244,21 @@ def query(index, text):
                 (length substr, offset Left, substr)
                 """
                 indexGrams = zip(
-                    [(n+1, j) for n in range(len(t)) for j in range(len(t)-n)[::-1]][::-1],
+                    [(n + 1, j) for n in range(len(t)) for j in range(len(t) - n)[::-1]][::-1],
                     allGrams
                 )
 
                 # then we search the longest matching substring
                 longestSubString = ''
                 coord = None
+
                 for lenStart, gram in indexGrams:
                     if gram not in char2Images:
-                        q = qp.parse(gram + '*')
-                        result = searcher.search(q, limit=4)
+                        q = qpHead.parse(gram)
+                        result = searcher.search(q)
                         if result:
-                            char2Images.update({gram: choice(list(result))['image']})
+                            randchoice = choice(list(result))
+                            char2Images[gram] = [randchoice['image'], choice(dict(randchoice['ccompsHeadTrace'])[gram])]
                             coord, longestSubString = lenStart, gram
                             break
                     else:
@@ -171,31 +267,36 @@ def query(index, text):
 
                 # rest of the string/token
                 leftMiss = t[:coord[1]]
-                rightMiss = t[coord[1]+coord[0]:]
+                rightMiss = t[coord[1] + coord[0]:]
 
                 if leftMiss:
-                    result = find(qp, searcher, leftMiss, char2Images)
+                    result = find(qpHead, searcher, leftMiss, char2Images)
                     for r in result:
-                        if r not in char2Images.keys() and r[1] != '_':  # check for duplicates
-                            char2Images[r[0]] = r[1]  # 0=ccomp, 1=image
+                        if r[0] not in char2Images.keys() and r[1] != '_':  # duplicates?
+                            # 0=ccomp, 1=image, 2=headtrace
+                            char2Images[r[0]] = r[1:]
                         orderedComps.append(r[0])
 
+                # middle of the word
                 orderedComps.append(longestSubString)
 
                 if rightMiss:
-                    result = find(qp, searcher, rightMiss, char2Images)
+                    result = find(qpTail, searcher, rightMiss, char2Images, qpHead)
                     for r in result:
-                        if r not in char2Images.keys() and r[1] != '_':  # check for duplicates
-                            char2Images[r[0]] = r[1]  # 0=ccomp, 1=image
-                        orderedComps.append(r[0])
+                        if r[0] not in char2Images.keys() and r[1] != '_':
+                            if r[2] == (-1, -1):
+                                char2Images['_'+r[0]] = r[1:]
+                                orderedComps.append('_'+r[0])
+                            else:
+                                char2Images[r[0]] = r[1:]
+                                orderedComps.append(r[0])
             else:
                 orderedComps.append(t)
             orderedComps.append(' ')  # space between words
+
         orderedComps.pop()  # removes last space
 
     return char2Images, orderedComps
-
-
 
 
 """

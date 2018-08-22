@@ -1,55 +1,74 @@
 import cv2
 import numpy as np
-
-import src.utils.imageProcessing
+from src.utils.imageProcessing import bbxes_data, bbxesCoverage, mask_by_colors
 from itertools import combinations, product
 from numpy import mean, diff, absolute
-from src.utils.imageProcessing import bbxesCoverage
 
 
-def char2position(imgPath, charColors):
+def char2position(imgPath, charColors, character='', show=False):
     """
     returns the centroid and area of the bbox corresponding to the mask of charColors
     :param imgPath: string. file (relative) path, eg. color_words/040v/159_585_41_63.png
     :param charColors: list of [G, B, R] colors
-    :return: list of tuples. Each tuple consists in (xCentroid, yCentroid, bboxArea).
+    :param character: current character for which bbxes are required
+    :return: list of tuples. Each tuple consists in (xCentroid, yCentroid, bboxArea, Width, Height, xStart, xEnd).
             this list exclude possibile disconnected fragments.
     """
     image = cv2.imread(imgPath)
-    mask = src.utils.imageProcessing.mask_by_colors(image, charColors)
-    # mask3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-    # cv2.imshow("images", np.hstack([image, mask3ch]))
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    mask = mask_by_colors(image, charColors)
 
-    # centroids + bboxes area
-    charpos = src.utils.imageProcessing.centroids_bbxes_areas(mask)
-    taken = set()
-    omit = set()
+    if show:
+        mask3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+        print(character)
+        cv2.imshow("images", np.hstack([image, mask3ch]))
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    #         xCentr, yCentr, area, width, height, xStart, xEnd, yStart, yEnd
+    charpos = bbxes_data(mask)
+    nElem = len(charpos)
+    validIndices, taken, omit = set(), set(), set()
+
+    # 'u' is often written as two separate strokes of the same size, let's use stricter constraints
+    xCentroidThrashold = 13.2 if character != 'u' else 11.0
+    areaThrashold = 0.99 if character != 'u' else 1.1
 
     if len(charpos) > 1:
-        for thisBB, thatBB in zip(charpos, charpos[1:]):
-            # sort by area
-            _min, _max = sorted([thisBB, thatBB], key=lambda el: el[2])
-            if abs(_max[0] - _min[0]) < 13.2 and _min[2] / _max[2] < 0.99:
-                # if we sum up _min and _max areas into newMax and we add this to taken
-                # we will eventually have both _max and newMax, let's remove _max first
-                omit.add(_max)
-                omit.add(_min)
+        for _curr, _next in zip(range(nElem), range(1, nElem)):
+            # if _curr is already in omit, use the last one taken, otherwise there is poor aggregation of bbxes
+            if _curr in omit:
+                _curr = max(taken)
 
-                newMax = (_max[0], _max[1], _min[2] + _max[2])
-                # print(newMax)
-                taken.add(newMax)
+            # sort by area                  (bbx, index)
+            _min, _max = sorted([(charpos[_curr], _curr),
+                                 (charpos[_next], _next)],
+                                key=lambda el: el[0][2])
+            if abs(_max[0][0] - _min[0][0]) < xCentroidThrashold and (_min[0][2] / _max[0][2]) < areaThrashold:
+                omit.add(_min[1])
+                # picking the right bbxes boundaries  for the aggregated bbox -> xStart, xEnd, yStart, yEnd
+                xStart = min([charpos[_curr][5], charpos[_next][5]])
+                xEnd = max([charpos[_curr][6], charpos[_next][6]])
+
+                yStart = min(charpos[_curr][7], charpos[_next][7])
+                yEnd = max(charpos[_curr][8], charpos[_next][8])
+
+                charpos[_max[1]] = ((_max[0][0] + _min[0][0]) / 2.0,              # xCentroid
+                                    (_max[0][1] + _min[0][1]) / 2.0,              # yCentroid
+                                    _min[0][2] + _max[0][2],                      # area
+                                    _min[0][3] + _max[0][3],                      # width
+                                    _max[0][4],                                   # height
+                                    xStart, xEnd, yStart, yEnd)
+                taken.add(_max[1])
             else:
-                taken.add(_max)
-                taken.add(_min)
-        charpos = taken - omit
-    # print('TAKEN:', taken)
-    # print('OMIT:', omit)
-    return sorted([el for el in charpos], key=lambda x: x[0])
+                taken.add(_max[1])
+                taken.add(_min[1])
+        validIndices = taken - omit
+    else:
+        validIndices.add(0)
+    return sorted([charpos[i] for i in validIndices], key=lambda x: x[0])
 
 
-def positions2chars(imgPath, char2colors, votes=None):
+def positions2chars(imgPath, char2colors, votes=None, show=False):
     """
     This method associates to each word-image(file path) a list of its characters with corresponding xCentroid, area
     and vote
@@ -59,9 +78,10 @@ def positions2chars(imgPath, char2colors, votes=None):
             - char
             - colors
     :param votes: Mapping between annotated chars and their votes.
-    :return: list of tuples in the form of    ((xCentroid, yCentroid, Area), char)
+    :return: list of tuples in the form of    ((xCentroid, yCentroid, Area, Width, Height, xStart, xEnd, yStart, yEnd), char)
     """
-    toScalar = (lambda el: (np.asscalar(el[0]), np.asscalar(el[1]), np.asscalar(el[2])))
+    # toScalar is necessary for  serialization
+    toScalar = (lambda vals: tuple(np.asscalar(el) for el in vals))
     # output
     pos2ch = []
     ch2col = char2colors.items()
@@ -69,29 +89,31 @@ def positions2chars(imgPath, char2colors, votes=None):
     for ch, colors in ch2col:
         # colors(RGB) -> colors(GBR)
         colorsGBR = np.flip(np.array(colors, dtype=np.uint8), 1)
-        # print(ch)
-        bboxesStats = char2position(imgPath, colorsGBR)
+        bboxesStats = char2position(imgPath, colorsGBR, ch, show)
         if ch == 'semicolon':
             bboxesStats = [bboxesStats[0]]
-        pos2ch.append([(toScalar(coord), ch) for coord in bboxesStats])
+        pos2ch.append([(toScalar(bbxdata), ch) for bbxdata in bboxesStats])
 
     pos2ch = sorted([y for x in pos2ch for y in x])
 
-
-    # removing unnecessary strokes
-    # 'l_stroke', 'l'
+    """
+    removing 'stroke's
+    ... 'l_stroke', 'l' ... -> 'l'
+    ... 'l', 'l_stroke' ... -> 'l'
+    ... 'l_stroke' ... -> 'l'
+    """
     stroked = set()
     for i in range(len(pos2ch)):
         if len(pos2ch[i][1]) == 1:
             try:
-                if pos2ch[i][1][0] == pos2ch[i-1][1][0] and len(pos2ch[i-1][1]) > 1 and pos2ch[i-1][1][1] == '_'\
-                        and pos2ch[i-1][1][0][2]/pos2ch[i][1][0][2] < 1.:
+                if pos2ch[i][1][0] == pos2ch[i - 1][1][0] and len(pos2ch[i - 1][1]) > 1 and pos2ch[i - 1][1][1] == '_' \
+                        and pos2ch[i - 1][1][0][2] / pos2ch[i][1][0][2] < 1.:
                     stroked.add(pos2ch[i])
             except IndexError:
                 pass
             try:
-                if pos2ch[i][1][0] == pos2ch[i+1][1][0] and len(pos2ch[i+1][1]) > 1 and pos2ch[i+1][1][1] == '_' \
-                        and pos2ch[i+1][1][0][2] / pos2ch[i][1][0][2] < 1.:
+                if pos2ch[i][1][0] == pos2ch[i + 1][1][0] and len(pos2ch[i + 1][1]) > 1 and pos2ch[i + 1][1][1] == '_' \
+                        and pos2ch[i + 1][1][0][2] / pos2ch[i][1][0][2] < 1.:
                     stroked.add(pos2ch[i])
             except IndexError:
                 pass
@@ -121,18 +143,17 @@ def positions2chars(imgPath, char2colors, votes=None):
                 pass
             i += 1
 
-
-        # if length of pos2ch is still >1 then evaluate other cases
+        # if length of pos2ch is still > 1 then evaluate other cases
         if len(pos2ch) > 1:
             # elements of this list will be omitted
             omit = set()
-            meanCentroidXDistance = mean(absolute(diff([el[0][0] for el in pos2ch]))) # if len(pos2ch) > 1 else pos2ch[]
+            meanCentroidXDistance = mean(absolute(diff([el[0][0] for el in pos2ch])))  # if len(pos2ch) > 1 else pos2ch[]
 
             for this, that in combinations(ch2col, 2):
                 overlapping = [c for c in this[1] if c in that[1]]
                 if overlapping:
                     overlGBR = np.flip(np.array(overlapping, dtype=np.uint8), 1)
-                    ovrlBBexes = [coordOvr for coordOvr in char2position(imgPath, overlGBR)]
+                    ovrlBBexes = char2position(imgPath, overlGBR)
 
                     # grouping overlapping chars
                     thisBBxes, thatBBxes = [], []
@@ -197,33 +218,33 @@ def getConnectedComponents(imageName, annotations, bwmask):
     """
     getConnectedComponents('056r_178_258_1393_1827/768_1024_47_181.png', words[imageName], bwmask)
 
-    {'056r_178_258_1393_1827/768_1024_47_181.png': [['p','a','r','i_bis','u','p','n','d','e'],
-                                                [['p', 'a', 'r', 'i_bis'],
-                                                 ['u', 'p'],
-                                                 ['n'],
-                                                 ['d'],
-                                                 ['e']]]
-                                                 }
+    [['p','a','r','u','p','n','d','e']
+                ||
+                V
+    {'056r_178_258_1393_1827/768_1024_47_181.png':
+                                                    [['p', 'a', 'r'],
+                                                     ['u', 'p'],
+                                                     ['n'],
+                                                     ['d'],
+                                                     ['e']]]
+                                                     }
 
     :param imageName: string. Relative path/image: dir/name.png
     :param annotations: words.json. Associates images to the relative transcribed word (as list of centroids and chars)
     :param bwmask: black and white mask
     :return: dict of list. Image to [full word, [connected components]]
     """
-    fullWord = [c[1] for c in annotations]
-    connectedCoords = bbxesCoverage(bwmask)
-    # placeholders for each connected component chars list
-    connected = [[] for _ in connectedCoords]
+    connectedCoords = bbxes_data(bwmask)  # bbxesCoverage(bwmask)
+    # placeholders for each connected component
+    connections = [[] for _ in connectedCoords]
 
     for centroid, ch in annotations:
         for i, bbox in enumerate(connectedCoords):
-            start, end, ctr = bbox
-            centroid = centroid[:2]
-            ctr = ctr.tolist()
-            if centroid == ctr or start <= centroid[0] < end:
+            xCtr, yCtr, xStart, xEnd, yStart, yEnd = bbox[0], bbox[1], bbox[5], bbox[6], bbox[7], bbox[8]
+            centroid = centroid[:2]     # from annotations
+            ctr = [xCtr, yCtr]          # from bwmask connected comps
+            if centroid == ctr or (xStart <= centroid[0] < xEnd and yStart <= centroid[1] <= yEnd):
                 break
-        connected[i].append(ch)
+        connections[i].append(ch)
 
-    # cv2.imshow(bwmask)
-    # cv2.waitKey(0)
-    return {imageName: [fullWord, connected]}
+    return {imageName: [comp for comp in connections if comp]}
