@@ -151,8 +151,7 @@ def find(defaultParser, searcher, pattern, taken, secondaryParser=None):
     On picking a token:
 
                 defaultdict(list,
-                    {'e': [],
-                     'per': [((0, 0),)],
+                    {'per': [((0, 0),)],
                      'pert': [((0, 0), (0, 1))],
                      'pertu': [((0, 3),), ((0, 0), (0, 1), (0, 2))],
                      'pertupertu': [((0, 0), (0, 1), (0, 2), (0, 3))],
@@ -181,7 +180,7 @@ def find(defaultParser, searcher, pattern, taken, secondaryParser=None):
                 if result:
                     randchoice = choice(list(result))
                     # if defaultParser is tailParser and there is a result. Tail is True
-                    metadata = [randchoice['image'], (-1, -1)] if secondaryParser \
+                    metadata = [randchoice['image'], [(-1, -1)]] if secondaryParser \
                         else [randchoice['image'], choice(dict(randchoice['ccompsHeadTrace'])[p])]
                     out.append((p, *metadata))
 
@@ -214,13 +213,18 @@ def query(index, text):
 
             ['cia', 'o']
 
-    :param index:
-    :param text:
-    :return:
+    :param index: whoosh index
+    :param text: String. Input text
+    :return: defaultditc, list.
 
     """
     char2Images = defaultdict(list)  # eg. 'a': 'path/image.png'
     orderedComps = []  # 'h', 'e', 'll', 'o'
+
+    with open(connCompsJSON, 'r') as ccfile:
+        inputTextCC = load(ccfile)
+
+    getSubTokens = (lambda imgNcoord: [inputTextCC[imgNcoord[0]][cmp][pos] for cmp, pos in imgNcoord[1]])
 
     with index.searcher() as searcher:
         qpHead = qparser.QueryParser('ccompsHead', index.schema)
@@ -258,7 +262,8 @@ def query(index, text):
                         result = searcher.search(q)
                         if result:
                             randchoice = choice(list(result))
-                            char2Images[gram] = [randchoice['image'], choice(dict(randchoice['ccompsHeadTrace'])[gram])]
+                            positions = choice(dict(randchoice['ccompsHeadTrace'])[gram])
+                            char2Images[gram] = [randchoice['image'], getSubTokens((randchoice['image'], positions))]
                             coord, longestSubString = lenStart, gram
                             break
                     else:
@@ -274,7 +279,7 @@ def query(index, text):
                     for r in result:
                         if r[0] not in char2Images.keys() and r[1] != '_':  # duplicates?
                             # 0=ccomp, 1=image, 2=headtrace
-                            char2Images[r[0]] = r[1:]
+                            char2Images[r[0]] = [r[1], getSubTokens((r[1], r[2]))]
                         orderedComps.append(r[0])
 
                 # middle of the word
@@ -283,13 +288,16 @@ def query(index, text):
                 if rightMiss:
                     result = find(qpTail, searcher, rightMiss, char2Images, qpHead)
                     for r in result:
+                        # ('al', 'dir/name.png', ((0, 1), (0, 2)))
                         if r[0] not in char2Images.keys() and r[1] != '_':
                             if r[2] == (-1, -1):
-                                char2Images['_'+r[0]] = r[1:]
+                                char2Images['_'+r[0]] = [r[1], r[0]]
                                 orderedComps.append('_'+r[0])
                             else:
-                                char2Images[r[0]] = r[1:]
+                                char2Images[r[0]] = [r[1], getSubTokens((r[1], r[2]))]
                                 orderedComps.append(r[0])
+                        else:
+                            orderedComps.append(r[0])
             else:
                 orderedComps.append(t)
             orderedComps.append(' ')  # space between words
@@ -298,34 +306,3 @@ def query(index, text):
 
     return char2Images, orderedComps
 
-
-"""
- [((7, 0), 'cammino'),
- ((6, 0), 'cammin'),
- ((6, 1), 'ammino'),
- ((5, 0), 'cammi'),
- ((5, 1), 'ammin'),
- ((5, 2), 'mmino'),
- ((4, 0), 'camm'),
- ((4, 1), 'ammi'),
- ((4, 2), 'mmin'),
- ((4, 3), 'mino'),
- ((3, 0), 'cam'),
- ((3, 1), 'amm'),
- ((3, 2), 'mmi'),
- ((3, 3), 'min'),
- ((3, 4), 'ino'),
- ((2, 0), 'ca'),
- ((2, 1), 'am'),
- ((2, 2), 'mm'),
- ((2, 3), 'mi'),
- ((2, 4), 'in'),
- ((2, 5), 'no'),
- ((1, 0), 'c'),
- ((1, 1), 'a'),
- ((1, 2), 'm'),
- ((1, 3), 'm'),
- ((1, 4), 'i'),
- ((1, 5), 'n'),
- ((1, 6), 'o')]
-"""

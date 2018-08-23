@@ -62,14 +62,14 @@ def toNGrams(ccomps, n=2, isClean=False):
     return grams
 
 
-def filteringChars(text, subst=' ', isLower=True):
+def filteringChars(text, subst=' ', hasUppercase=True):
     """
     Given a text (str) only those characters for which a transcription exists are kept, unacceptable ones are replaced
     with a space
         'hello! vs hi!' -> 'hello   s hi '
     :param text: str. Input text.
     :param subst: str. Substitute for invalid chars
-    :param isLower: boolean. Filtering out upper case chars.
+    :param hasUppercase: boolean. Filtering out upper case chars.
     :return: str. Filtered text
     """
     alphabet = {'d', 'n', 'p', 't', 'b', 'c', 'x', 'l', 'm', 's', 'i', 'a', 'u', 'o', 'q', 'g', 'h', 'f', 'e', 'r', ' ',
@@ -77,4 +77,4 @@ def filteringChars(text, subst=' ', isLower=True):
 
     filtering = ''.join(char if char in alphabet else subst for char
                         in (''.join(ch if ch in printable else subst for ch in normalize('NFKD', text))))
-    return filtering.lower() if isLower else filtering
+    return filtering if hasUppercase else filtering.lower()
