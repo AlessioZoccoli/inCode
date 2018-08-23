@@ -162,5 +162,5 @@ def cropByColor(image, colors):
     return mask[top: bottom, left: right]
 
 
-def background(width=720, height=890, color=0):
+def background(width=1400, height=1900, color=0):
     return np.zeros((height, width), dtype=np.uint8) if color == 0 else np.full((height, width), 255, dtype=np.uint8)

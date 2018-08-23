@@ -44,6 +44,7 @@ data/*
 voteAnnotations.py
 
 config.py
+ezechieleData.py
 
 # Redis #
 redis.conf
