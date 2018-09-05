@@ -2,13 +2,13 @@ from collections import defaultdict
 from json import load
 from os import path
 from pprint import pprint
-from config import annotationsJSON, votesJSON, color_words
+from config import annotationsCleanJSON, votesJSON, color_words
 from src.lib.image2word import positions2chars
 
 
 if __name__ == '__main__':
 
-    with open(annotationsJSON, 'r') as a:
+    with open(annotationsCleanJSON, 'r') as a:
         annotations = load(a)
 
     with open(votesJSON, 'r') as v:
@@ -25,8 +25,9 @@ if __name__ == '__main__':
               '056r_178_258_1393_1827/756_805_42_43.png', '056r_178_258_1393_1827/768_1024_47_181.png',
               '055v_631_241_1360_1839/290_1660_34_72.png', '060v/131_715_32_86.png']
     """
+
     # images = ['055v_631_241_1360_1839/290_1660_34_72.png'] three pieces 'm'
-    images = ['049v_586_258_1366_1821/1108_466_38_113.png']  # 055v_631_241_1360_1839/122_422_40_65.png
+    images = ['058v/361_473_37_75.png']
 
     for myImage in images:
         imgPath = path.join(color_words, myImage)
@@ -34,9 +35,3 @@ if __name__ == '__main__':
         img2chars[myImage] = result
 
     # pprint(img2chars)
-    """
-    for k, v in img2chars.items():
-        pprint((k, [ch[1] for ch in v]))
-        pprint([(ch[0][5], ch[0][6], ch[0][7], ch[0][8], 'area: ', ch[0][2], 'centr', ch[0][0], ch[0][1], ) for ch in v])
-        print('\n')
-    """

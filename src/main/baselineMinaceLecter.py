@@ -1,6 +1,6 @@
 from whoosh.reading import IndexReader
 
-from src.lib.indices import *
+from src.lib.indexing import *
 from pprint import pprint
 from src.utils.textProcessing import filteringChars
 

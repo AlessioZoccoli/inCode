@@ -144,7 +144,7 @@ def getMissingElements(image, annotations):
 def cropByColor(image, colors):
     """
     Crops 'image' by keeping only areas associated with 'colors' via bounding box.
-    Outputs a BW image where selected characters/colors are white and background is black
+    Outputs a BW image where selected characters/colors are white and creatBackground is black
     :param image: str.
     :param colors: numpy array. Colors as a numpy matrix of BGR values of dtype uint8
     :return: numpy.array. Black and white image containing the connected component
@@ -162,5 +162,22 @@ def cropByColor(image, colors):
     return mask[top: bottom, left: right]
 
 
-def background(width=1400, height=1900, color=0):
+def extractComponent(image, colors, fromX, toX, fromY, toY):
+    """
+    Crops 'image' by keeping only areas associated with 'colors' in a given range of pixels.
+    Outputs a BW image where selected characters/colors are white and creatBackground is black
+    :param toY:
+    :param fromY:
+    :param toX:
+    :param fromX:
+    :param image: str.
+    :param colors: numpy array. Colors as a numpy matrix of BGR values of dtype uint8
+    :return: numpy.array. Black and white image containing the connected component
+    """
+
+    mask = mask_by_colors(image, colors)
+    return mask[fromY: toY, fromX: toX]
+
+
+def creatBackground(width=1400, height=1900, color=0):
     return np.zeros((height, width), dtype=np.uint8) if color == 0 else np.full((height, width), 255, dtype=np.uint8)

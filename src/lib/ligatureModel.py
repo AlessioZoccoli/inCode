@@ -19,6 +19,8 @@ class LigatureModel:
         with open(connCompsJSON, 'r') as s:
             source = load(s)
 
+        print('Creating the ligature model from: {}'.format(connCompsJSON))
+
         _bigrams = toNGrams(source.values(), isClean=True)
         _trigrams = [((first, sec), third) for first, sec, third in toNGrams(source.values(), n=3, isClean=True)]
 
@@ -78,10 +80,15 @@ class LigatureModel:
         return prob
 
 
-    def mostFrequent(self, n=20, gram=2):
+    def mostFrequent(self, n=30, gram=2, flag=True):
         freqDist = self.cfdBigrams if gram == 2 else self.cfdTrigrams
+        print('flag: ', flag)
+        # if ('<s>' in condition[0] and flag) or ('<s>' not in condition[0])
         return sorted(
-            [((*condition, sample[0]), sample[1]) for condition, samples in freqDist.items() for sample in samples.items()],
+            [((*condition, sample[0]), sample[1]) for condition, samples in freqDist.items() for sample in samples.items()
+             if (('<s>' in condition[0] and flag) or ('<s>' not in condition[0])) and
+             (('</s>' in sample[0] and flag) or ('</s>' not in sample[0]))
+             ],
             key=lambda x: -x[1])[:n]
 
 

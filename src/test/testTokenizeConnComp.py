@@ -7,6 +7,7 @@ from src.lib.image2word import getConnectedComponents, positions2chars
 from src.utils.imageProcessing import mask_by_colors
 from pprint import pprint
 
+
 if __name__ == '__main__':
 
     """
@@ -31,7 +32,7 @@ if __name__ == '__main__':
         words = load(wordsFile)
         annoted = load(annotFile)
 
-    myImage = '056r_178_258_1393_1827/768_1024_47_181.png'  # '040v/401_532_46_140.png'
+    myImage = '054r/978_1509_39_159.png'  # '040v/401_532_46_140.png'
     myImagePath = path.join(color_words, myImage)
 
 
@@ -39,7 +40,7 @@ if __name__ == '__main__':
     image = cv2.imread(myImagePath)
     mask = mask_by_colors(image, colors)
 
-    # pprint(positions2chars(myImagePath, annoted[myImage], votes[myImage]))
+    # pprint(words[myImage])
     print('\n\nconnected components:')
     res = getConnectedComponents(myImage, words[myImage], mask)
     pprint(res)

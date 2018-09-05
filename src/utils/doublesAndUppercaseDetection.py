@@ -126,6 +126,7 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #
 #  everything uppercase 050v/695_535_50_91.png, 040v/614_472_54_95.png
 #
+#  'b' 049v/1062_1331_44_127.png is uppercase
 # 'f' '048v/149_1460_34_193.png', 060r_165_264_1424_1835/256_973_36_26.png -> 'fi'
 #     050v/197_710_30_71.png, 057v_542_281_1394_1819/447_1086_37_48.png => 'fu'
 #     059v/235_1405_34_77.png => 'fa' remove
@@ -144,6 +145,8 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #       'e____' 049v_586_258_1366_1821/174_356_34_166.png
 #       'de' '047r/599_510_44_112.png', '047r/1121_1338_33_155.png'
 #      -lower: 054r/144_947_32_32.png, 056r_178_258_1393_1827/811_1307_27_35.png, 054r/360_950_37_163.png
+#      -final but in the beginning: 050r/571_1721_54_117.png
+#
 #
 # 'l' double on [0] 050v/936_926_34_63.png
 #       055v_631_241_1360_1839/455_1254_37_69.png
@@ -152,10 +155,15 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #     '048v/1187_131_47_86.png'
 #     '050v/936_926_34_63.png',
 #     '055v_631_241_1360_1839/455_1254_37_69.png'
+#       final = 050r/251_386_40_115.png
+#
 #
 # 't'    'l'! = 056r_178_258_1393_1827/146_1079_34_58.png,
 #        056r_178_258_1393_1827/881_758_25_40.png lowercase
 #       'tt' = 056r_178_258_1393_1827/1076_691_34_55.png, 057v_542_281_1394_1819/714_416_46_167.png
+#        't' only 1 t is annotated 059v/353_170_46_131.png
+#        separated from 'a' and single 054r/1191_1563_35_76.png
+#
 # 'ex' 054r/55_1281_40_87.png
 # 'xx' 050v/325_549_36_84.png, 048r/458_954_25_70.png
 # 'a'  057v_542_281_1394_1819/385_1696_34_117.png => 'fa' remove or merge it
@@ -167,6 +175,7 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #       lower case =      '055r/549_1559_30_49.png', '060r_165_264_1424_1835/1114_367_32_48.png',
 #                         '055r/1117_1100_40_177.png',
 #                         '054r/671_738_25_69.png', '048r/734_1332_37_90.png',
+#      first 'a' is a small stain (the following 2 are legit) 055r/756_1499_35_166.png
 # 'h'  046r/347_1620_38_131.png   small but upper case, 059r/776_776_50_133.png also upper case,
 #        long 058v/104_261_31_191.png
 #      lower: 059v/1212_785_46_49.png, 055r/867_1616_47_67.png,
@@ -208,6 +217,9 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #          SEE sLowerCase
 #          's' Upper case? 059r/924_838_28_25.png, 060v/580_108_28_26.png
 #           ornaments: 050v/71_1092_40_176.png
+#          single and final = 048v/680_364_35_108.png 049v_586_258_1366_1821/1096_351_42_185.png
+#          FInal but in the middle: 050v/1003_493_37_264.png, remove!
+#          final : 058v/1010_257_46_166.png
 #
 #  'u'      uppercase thrasholds: areaRatio >= 1.2 widthRatio >= 1.4
 #           050v/129_648_36_86.png ending stroke of Q, 049v/806_1220_35_130.png ending stroke of C
@@ -226,6 +238,13 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 # 'n' upper: '046r/1027_1446_40_108.png', '055v_631_241_1360_1839/178_749_36_118.png', '058v/991_757_37_134.png'
 #     lower: '054r/945_1615_38_95.png'
 #  'q'     no 040v/747_1473_38_40.png
+#   'eran'   in 050r/977_882_37_174.png is not a real cc =>  e r an
+#
+#    051v/306_1520_34_164.png secon 'm' is a stein
+#    056r_178_258_1393_1827/488_856_51_217.png    [['l'], ['i'], ['i', 's'], ['ss'], ['p', 'e'], ['n'], ['n'], ['us']]
+#
+#   'qui' first occurrence is a stain 050r/792_449_42_103.png
+#
 
 doublesRules = {
     'a': (lambda _: SINGLE),

@@ -1,5 +1,4 @@
 from json import load, dump
-from pprint import pprint
 
 from config import *
 from src.utils.doublesAndUppercaseDetection import doublesRules, upperCaseRules
@@ -14,9 +13,6 @@ def doublesAndUppercase(wordsInput):
 
     for img, bbxes in wordsInput.items():
         deletable = []
-        if img == '051r/540_1571_43_122.png':
-            print(img)
-            print(len(bbxes[0][1]) == 1, bbxes[0][1].islower(), upperCaseRules[bbxes[0][1]](bbxes[0]))
         if len(bbxes[0][1]) == 1 and bbxes[0][1].islower():
             char = bbxes[0][1]
             if upperCaseRules[bbxes[0][1]](bbxes[0]):

@@ -33,6 +33,8 @@ def getIndex(indexName, schema=None):
     indexPath = path.join(dataPath, indexName)
     _schema = schema if schema else minaceSchema()
 
+    print('indexPath    ', indexPath)
+
     if not path.exists(indexPath):
         mkdir(indexPath)
     if exists_in(indexPath):
@@ -85,25 +87,40 @@ def fillIndex(index):
     writer = index.writer(procs=4, limitmb=128)
 
     for image, annot in data.items():
-        head, tail = "", ""
-        length = len(annot)
+        tail = ""
+        aLength = len(annot)
+        headFiltered = []
 
-        if (len(annot[-1]) == 1 or len(annot[-1][-1]) == 1) and annot[-1][0] in ('s', 'e', 'l', 'm'):
-            tail = annot[-1][-1]
+        # nont ending components/ ending component
+        for i, comp in enumerate(annot):
+            if i < aLength - 1:
+                headFiltered.append(comp)
+            else:
+                if comp[-1] in ('s', 'e', 'l', 't', 'm', 'que', 'bus', 'us'):               # these MUST be in tail
+                    tail = comp[-1]
+                    if comp[:-1]:
+                        headFiltered.append(comp[:-1])
+                elif comp[-2:] in (['q', 'ue'], ['b', 'us']):
+                    tail = "".join(comp[-2:])
+                    if comp[:-1]:
+                        headFiltered.append(comp[:-1])
+                else:
+                    headFiltered.append(comp)
 
         # mapping each non ending token to its position in the annotation
-        headPositions = [[g for g in gram]
-                         for gram in [everygrams([(ind, i) for i, e in enumerate(el)
-                                                  if not (ind == length - 1 and i == len(el) - 1 and
-                                                          e in ('s', 'e', 'l', 'm', 'semicolon'))],
-                                                 max_len=10) for ind, el in enumerate(annot)]]
+        headPositions = [
+            [[g for g in gram] for gram in everygrams([(ind, i) for i in range(len(headComp))], max_len=10)]
+            for ind, headComp in enumerate(headFiltered)]
 
-        hCombinations = tuple([tuple(["".join([annot[comb[0]][comb[1]] for comb in combs]) for combs in combsCC])
-                               for combsCC in headPositions])
+        # possible combinations (ngrams) for connected components
+        hCombinations = tuple(
+            [tuple(["".join([headFiltered[comb[0]][comb[1]] for comb in combs]) for combs in combsCC]) for combsCC in
+             headPositions])
 
         # indexable string
         head = " ".join([" ".join([h for h in hcomp]) for hcomp in hCombinations])
 
+        # each possible char/compound to its position
         # (char_i, position in values) -> cctrace = (char_i, [positionS in values])
         ch2position = [subdict for subdict in [list(zip(el[0], list(el[1])))
                                                for el in zip(hCombinations, headPositions)]]
@@ -113,20 +130,14 @@ def fillIndex(index):
                 ccTrace[ch].append(pos)
 
 
+        writeArgs = {'image': image}
+        if head:
+            writeArgs.update({'ccompsHead': head})
+            writeArgs.update({'ccompsHeadTrace': tuple((k, tuple(v)) for k, v in ccTrace.items() if v)})  # tuple are pickable, lists are not
         if tail:
-            writer.update_document(
-                image=image,
-                ccompsHead=head,
-                ccompsTail=tail,
-                ccompsHeadTrace=tuple((k, tuple(v)) for k, v in ccTrace.items() if v)  # tuple are pickable, lists are not
-            )
-        else:
-            writer.update_document(
-                image=image,
-                ccompsHead=head,
-                ccompsHeadTrace=tuple(((k, v) for k, v in ccTrace.items()))
-            )
+            writeArgs.update({'ccompsTail': tail})
 
+        writer.add_document(**writeArgs)
     writer.commit()
 
 
@@ -290,8 +301,8 @@ def query(index, text):
                     for r in result:
                         # ('al', 'dir/name.png', ((0, 1), (0, 2)))
                         if r[0] not in char2Images.keys() and r[1] != '_':
-                            if r[2] == (-1, -1):
-                                char2Images['_'+r[0]] = [r[1], r[0]]
+                            if r[2] == [(-1, -1)]:
+                                char2Images['_'+r[0]] = [r[1], [r[0]]]
                                 orderedComps.append('_'+r[0])
                             else:
                                 char2Images[r[0]] = [r[1], getSubTokens((r[1], r[2]))]

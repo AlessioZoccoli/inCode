@@ -132,11 +132,62 @@ def positions2chars(imgPath, char2colors, votes=None, show=False):
         while i < len(coords):
             try:
                 doubleCharIndex = coords[i + 1:].index(coords[i]) + i + 1
-                toRemove = min([
-                    (i, min(votes[pos2ch[i][1]])),  # list index and minimum vote for the char
-                    (doubleCharIndex, min(votes[pos2ch[doubleCharIndex][1]]))],
-                    key=lambda x: x[1]
-                )[0]  # just keep the list index
+
+                currCharLeft = pos2ch[i][1]
+                currLeft = currCharLeft
+                currCharRight = pos2ch[doubleCharIndex][1]
+                currRight = currCharRight
+
+                # doubles and uppercases checking
+                try:
+                    if currCharRight[1] == currCharRight[0]:
+                        currRight = currCharRight[0]
+                except IndexError:
+                    pass
+                if currCharRight.isupper():
+                    currRight = currCharRight.lower()
+
+                try:
+                    if currCharLeft[1] == currCharLeft[0]:
+                        currLeft = currCharLeft[0]
+                except IndexError:
+                    pass
+                if currCharLeft.isupper():
+                    currLeft = currCharLeft.lower()
+
+                assert isinstance(currRight, str)
+                assert isinstance(currLeft, str)
+
+                isManualConn_Left = False
+                isManualConn_Right = False
+
+                if currLeft not in votes:
+                    if currLeft + "_stroke" in votes:
+                        currLeft += "_stroke"
+                    elif currLeft + "_new" in votes:
+                        currLeft += "_new"
+                    else:
+                        isManualConn_Left = True  # handmade connected comps = trustworthy
+
+                if currRight not in votes:
+                    if currRight + "_stroke" in votes:
+                        currRight += "_stroke"
+                    elif currRight + "_new" in votes:
+                        currRight += "_new"
+                    else:
+                        isManualConn_Right = True  # handmade connected comps = trustworthy
+
+                # Assuming isManualConn_Left and *_right are not True at the same time
+                if not (isManualConn_Left or isManualConn_Right):
+                    toRemove = min([
+                        (i, min(votes[currLeft])),  # list index and minimum vote for the char
+                        (doubleCharIndex, min(votes[currRight]))],
+                        key=lambda x: x[1]
+                    )[0]  # just keep the list index
+                elif isManualConn_Left:
+                    toRemove = i
+                else:
+                    toRemove = doubleCharIndex
                 del coords[toRemove]
                 del pos2ch[toRemove]
             except ValueError:
