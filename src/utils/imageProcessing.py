@@ -107,6 +107,7 @@ def bbxes_data(img):
     :param img: numpy array dtype = uint8, shape (height,width).
                 Binary image (0 = no ink, 255 = inked).
     :return: list of centroids and areas of the bboxes. List is ordered by x coordinate of each centroid.
+                                0           1        2      3      4       5      6     7       8
              Tuples lists = [(xCentroid, yCentroid, area, width, height, xStart, xEnd, yStart, yEnd), ...]
     """
     _, _, stats, centr = cv2.connectedComponentsWithStats(img)
@@ -181,3 +182,26 @@ def extractComponent(image, colors, fromX, toX, fromY, toY):
 
 def creatBackground(width=1400, height=1900, color=0):
     return np.zeros((height, width), dtype=np.uint8) if color == 0 else np.full((height, width), 255, dtype=np.uint8)
+
+
+def mergeBBxes(thisBB, thatBB):
+    """
+
+    :param thisBB: Tuple. First bounding box
+    :param thatBB: Tuple. Second bounding box
+    :return: Tuple. bounding box.
+
+                 0           1        2      3      4       5      6     7       8
+               (xCentroid, yCentroid, area, width, height, xStart, xEnd, yStart, yEnd)
+    """
+    xCentroid = np.mean([thisBB[0], thatBB[0]])
+    yCentroid = np.mean([thisBB[1], thatBB[1]])
+    area = thisBB[2] + thatBB[2]
+    width = max([thisBB[6], thatBB[6]]) - min([thisBB[5], thatBB[5]])
+    height = max([thisBB[8], thatBB[8]]) - min([thisBB[7], thatBB[7]])
+    xStart = min([thisBB[5], thatBB[5]])
+    xEnd = xStart + width
+    yStart = min([thisBB[7], thatBB[7]])
+    yEnd = yStart + height
+
+    return xCentroid, yCentroid, area, width, height, xStart, xEnd, yStart, yEnd

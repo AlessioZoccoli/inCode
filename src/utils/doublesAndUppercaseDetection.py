@@ -136,7 +136,7 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #
 #      - upper: 047r/882_1507_48_56.png, 056v/1229_1061_34_62.png
 #       'eg' ' 049v_586_258_1366_1821/171_1592_37_129.png' edit anncolor_clean so that 'g' -> 'eg'
-#       'ex' '059r/1193_195_33_38.png', '057r/148_314_35_34.png', 055r/632_1614_49_108.png, 055r/674_992_50_140.png,
+#       'ex' '059r/1193_195_33_38.png', '057r/148_314_35_34.png', 055r/632_1614_49_108.png, 055r/674_992_50_140.png (e lower),
 #            058v/177_1545_46_192.png, 051r/252_627_50_126.png, 058v/523_695_52_124.png, 051r/1119_894_56_99.png,
 #            051r/700_473_38_114.png, 054r/360_950_37_163.png, 054r/360_950_37_163.png, 051r/1119_894_56_99.png,
 #            059r/1193_195_33_38.png, 051r/252_627_50_126.png
@@ -163,6 +163,8 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #       'tt' = 056r_178_258_1393_1827/1076_691_34_55.png, 057v_542_281_1394_1819/714_416_46_167.png
 #        't' only 1 t is annotated 059v/353_170_46_131.png
 #        separated from 'a' and single 054r/1191_1563_35_76.png
+#          has final 't' 060r_165_264_1424_1835/1188_591_32_130.png
+#        048v/1044_461_35_127.png keep the bigge one
 #
 # 'ex' 054r/55_1281_40_87.png
 # 'xx' 050v/325_549_36_84.png, 048r/458_954_25_70.png
@@ -171,7 +173,7 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #       056r_178_258_1393_1827/398_249_46_133.png => 'pa', unmergable
 #       052r/689_1514_52_93.png => 'ap'
 #       058v/1263_918_34_43.png => 'ca
-#       upper case = 051r/540_1571_43_122.png, 046r/433_837_38_111.png
+#       upper case = 051r/540_1571_43_122.png, 046r/433_837_38_111.png 040v/785_363_37_67.png (?)
 #       lower case =      '055r/549_1559_30_49.png', '060r_165_264_1424_1835/1114_367_32_48.png',
 #                         '055r/1117_1100_40_177.png',
 #                         '054r/671_738_25_69.png', '048r/734_1332_37_90.png',
@@ -197,6 +199,7 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #  'm' uppercase 050r/734_1101_54_215.png
 #
 # 'p' upper case: '046v_586_244_1348_1778/1222_1096_46_47.png', 056v/254_902_37_91.png, 047r/1073_727_48_205.png
+#     'pro' 'pp' => 'P' 046v_586_244_1348_1778/471_1660_56_224.png
 #     056r_178_258_1393_1827/398_249_46_133.png => 'pa', keep it
 #     056v/106_349_36_92.png => 'pa'
 #     057v_542_281_1394_1819/507_859_46_124.png => 'pe' remove it
@@ -229,6 +232,7 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #                                               '049v/967_224_39_107.png'
 #           single = '056r_178_258_1393_1827/995_1580_35_111.png'
 #           double = '057r/235_591_24_86.png'
+#           keep the bigger one 052r/965_1123_35_74.png
 #
 #  'd'     areaRatio >= 1.41
 #           053r/443_1706_34_131.png => 'nd' remove

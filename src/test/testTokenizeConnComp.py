@@ -32,7 +32,7 @@ if __name__ == '__main__':
         words = load(wordsFile)
         annoted = load(annotFile)
 
-    myImage = '054r/978_1509_39_159.png'  # '040v/401_532_46_140.png'
+    myImage = '058v/1072_314_46_167.png'  # '040v/401_532_46_140.png'
     myImagePath = path.join(color_words, myImage)
 
 

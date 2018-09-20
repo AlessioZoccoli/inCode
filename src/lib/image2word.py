@@ -11,6 +11,7 @@ def char2position(imgPath, charColors, character='', show=False):
     :param imgPath: string. file (relative) path, eg. color_words/040v/159_585_41_63.png
     :param charColors: list of [G, B, R] colors
     :param character: current character for which bbxes are required
+    :param show: boolean. Display bbxes for debugging
     :return: list of tuples. Each tuple consists in (xCentroid, yCentroid, bboxArea, Width, Height, xStart, xEnd).
             this list exclude possibile disconnected fragments.
     """

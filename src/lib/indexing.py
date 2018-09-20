@@ -1,4 +1,5 @@
 from collections import defaultdict
+from pprint import pprint
 from random import choice
 from nltk.util import ngrams, everygrams
 from os import path, mkdir
@@ -91,12 +92,28 @@ def fillIndex(index):
         aLength = len(annot)
         headFiltered = []
 
+        """
+        edit to fit
+            "060v/1244_1049_33_94.png": [
+                                            [
+                                                "s",
+                                                "e"
+                                            ],
+                                            [              _           _
+                                                "d",        |   tail   |    head  
+                                                "e",        |          |
+                                                "s"         |         _
+                                            ]              _
+                                        ],
+        
+        """
+
         # nont ending components/ ending component
         for i, comp in enumerate(annot):
             if i < aLength - 1:
                 headFiltered.append(comp)
             else:
-                if comp[-1] in ('s', 'e', 'l', 't', 'm', 'que', 'bus', 'us'):               # these MUST be in tail
+                if comp[-1] in ('s', 'e', 'l', 't', 'm', 'n', 'que', 'bus', 'us'):               # these MUST be in tail
                     tail = comp[-1]
                     if comp[:-1]:
                         headFiltered.append(comp[:-1])
@@ -139,6 +156,121 @@ def fillIndex(index):
 
         writer.add_document(**writeArgs)
     writer.commit()
+
+
+def query(index, text):
+    """
+
+    :param index: whoosh index
+    :param text:
+    :return:
+    """
+    char2Images = defaultdict(list)  # eg. 'a': 'path/image.png'
+    orderedComps = []  # 'h', 'e', 'll', 'o'
+
+    with open(connCompsJSON, 'r') as ccfile:
+        inputTextCC = load(ccfile)
+
+    getSubTokens = (lambda imgNcoord: [inputTextCC[imgNcoord[0]][cmp][pos] for cmp, pos in imgNcoord[1]])
+    with index.searcher() as searcher:
+        qpHead = qparser.QueryParser('ccompsHead', index.schema)
+        qpTail = qparser.QueryParser('ccompsTail', index.schema)
+        qpHead.add_plugin(qparser.RegexPlugin())
+        qpTail.add_plugin(qparser.RegexPlugin())
+        analyze = KeywordAnalyzer()
+
+        for token in analyze(text):
+            t = token.text
+            if t not in char2Images:
+                # first, we search for all possible n-grams for a given token
+                allGrams = []
+                for n in range(len(t)):
+                    for ngram in ngrams(t, len(t) - n):
+                        allGrams.append(''.join(str(i) for i in ngram))
+
+                """
+                positional indices for grams
+                this will be used to find the "not longest" substring
+                (length substr, offset Left, substr)
+                """
+                indexGrams = list(zip(
+                    [(n + 1, j) for n in range(len(t)) for j in range(len(t) - n)[::-1]][::-1],
+                    allGrams
+                ))
+
+                tmp_ordComp = []                # sublist orderedDomps for current token
+                collectedChar = 0               # whole word taken
+                i = 0
+
+                while collectedChar < len(t) and i < len(indexGrams):
+                    lenStart, gram = indexGrams[i]
+                    _length, _start = lenStart
+                    prune = True
+                    inTail = False
+                    endGram = ""
+
+                    if gram not in char2Images:
+                        # tail or head
+                        if _start in range(len(t)-3, len(t)) and gram in ('s', 'e', 'l', 't', 'm', 'n', 'que', 'bus', 'us'):
+                            q = qpTail.parse(gram)
+                            inTail = True
+                            endGram = "_"+gram
+                        else:
+                            q = qpHead.parse(gram)
+                        result = searcher.search(q)
+
+                        # handling results
+                        if result and endGram not in char2Images:
+                            randchoice = choice(list(result))
+                            if t == 'Ca':
+                                print('\n\n', randchoice, '\n\n')
+
+                            if inTail:
+                                char2Images[endGram] = [randchoice['image'], [gram]]
+                                tmp_ordComp.append((lenStart, endGram))
+                            else:
+                                positions = choice(dict(randchoice['ccompsHeadTrace'])[gram])
+                                char2Images[gram] = [randchoice['image'], getSubTokens((randchoice['image'], positions))]
+                                tmp_ordComp.append((lenStart, gram))
+
+                                if t == 'Ca':
+                                    print('gram ', gram)
+                                    print(positions)
+                                    print(char2Images[gram])
+                                    print(':::')
+
+                        elif endGram in char2Images:
+                            tmp_ordComp.append((lenStart, endGram))
+                            break
+                        else:
+                            prune = False
+                    else:
+                        # already taken
+                        tmp_ordComp.append((lenStart, gram))
+
+                    if prune:
+                        collectedChar += _length
+                        pruned = [el for el in indexGrams[i + 1:]
+                                  if not (_start <= el[0][1] < _length + _start or  # start
+                                          _start <= el[0][0] + el[0][1] - 1 < _length + _start)  # end
+                                  ]
+                        indexGrams = indexGrams[:i + 1] + pruned
+
+                    i += 1
+
+                orderedComps.extend([oc[1] for oc in sorted(tmp_ordComp, key=lambda x: x[0][1])])
+            else:
+                orderedComps.append(t)
+            orderedComps.append(' ')  # space between words
+
+        orderedComps.pop()  # removes last space
+        return char2Images, orderedComps
+
+
+#
+#       2B tested
+#
+#
 
 
 def find(defaultParser, searcher, pattern, taken, secondaryParser=None):
@@ -214,7 +346,7 @@ def find(defaultParser, searcher, pattern, taken, secondaryParser=None):
     return out
 
 
-def query(index, text):
+def queryRec(index, text):
     """
     >> query(MyIndex, 'ciao')
 
@@ -316,4 +448,3 @@ def query(index, text):
         orderedComps.pop()  # removes last space
 
     return char2Images, orderedComps
-

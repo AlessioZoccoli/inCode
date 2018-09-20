@@ -27,7 +27,7 @@ if __name__ == '__main__':
     """
 
     # images = ['055v_631_241_1360_1839/290_1660_34_72.png'] three pieces 'm'
-    images = ['058v/361_473_37_75.png']
+    images = ["040v/1251_1137_44_83.png"]
 
     for myImage in images:
         imgPath = path.join(color_words, myImage)

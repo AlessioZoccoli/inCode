@@ -9,7 +9,7 @@ if __name__ == '__main__':
             ligMod = pickle.load(p)
 
 
-        print('probability of {}: {} \n\n'.format('ciao', ligMod.getComponentProb('ciao')))
+        print('\n\nprobability of {}: {} \n\n'.format('ciao', ligMod.getComponentProb('ciao')))
 
         print("Followers of q (bigrams):")
         pprint(ligMod.getFollowers(token='q', gram=2))
