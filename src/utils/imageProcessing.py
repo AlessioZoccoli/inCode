@@ -205,3 +205,18 @@ def mergeBBxes(thisBB, thatBB):
     yEnd = yStart + height
 
     return xCentroid, yCentroid, area, width, height, xStart, xEnd, yStart, yEnd
+
+
+def scaling(targetImg, sourceImg):
+    """
+    Scales input image sourceImg to match targetImg.
+    cv2.INTER_AREA is the suggest interpolator for downscaling
+    :param targetImg: cv2.mat, handwritten
+    :param sourceImg: cv2.mat, artificial
+    :return:
+    """
+    return cv2.resize(sourceImg,
+                      None,                                             # no specific out dim
+                      fx=targetImg.shape[1]/sourceImg.shape[1],         # scaling factor Y
+                      fy=targetImg.shape[0]/sourceImg.shape[0],         # # scaling factor X
+                      interpolation=cv2.INTER_AREA)
