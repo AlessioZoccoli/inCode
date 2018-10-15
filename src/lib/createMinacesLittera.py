@@ -6,7 +6,7 @@ from cv2 import imread
 from numpy import flip, zeros, uint8, invert
 
 from config import images2ColorsBBxesJSON, color_words
-from src.utils.imageProcessing import extractComponent, creatBackground
+from src.utils.imageProcessing import extractComponent, createBackground
 
 
 def createLetter(ccToTokens, phrase, toWhitePaper=True, vertical=False):
@@ -24,7 +24,7 @@ salve mundi
                     This list gives the ordering of the input phrase, preserving spaces from original text.
     :param toWhitePaper: Boolean.
                         True if output will be black text on white background, False vice versa.
-    :param useRandomOffset: add random offset between token
+    :param vertical: True if the output letter is a vertical list
     :return: 1400x1900 image representing the threatening letter
     """
 
@@ -86,7 +86,7 @@ salve mundi
                     if t not in ch2col[subStringImg]['col']:
                         if t.isupper():
                             _token = t.lower()
-                        elif t[1] == t[0]:
+                        elif t[1] == t[0]:      # TODO try except -> check size (y)
                             _token = t[0]
                         elif t in ('us', 'ue'):
                             _token = 'semicolon'
@@ -119,7 +119,7 @@ salve mundi
     #   Creating the image
     #
     def createLetterImage():
-        back = creatBackground()
+        back = createBackground()
         xOff, xOffRand = 40, 0  # meanWidth = 17 circa
         # interRowOffset = 70
         row = 0
@@ -166,7 +166,7 @@ salve mundi
 
 
     def createVerticalImg():
-        back = creatBackground()
+        back = createBackground()
         yOff = 5
         for idx, patch2hbc in enumerate(patches):
             # patch, hasBigChar "penalty"

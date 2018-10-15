@@ -2,7 +2,7 @@ from json import load
 from os import path, getcwd
 import cv2
 import numpy as np
-from src.utils.imageProcessing import mask_by_colors, getMissingElements
+from src.utils.imageProcessing import maskByColors, getMissingElements
 from config import *
 
 if __name__ == '__main__':
@@ -18,11 +18,11 @@ if __name__ == '__main__':
 
     missings = getMissingElements(image, list(annot[i].values()))
     # RGB -> BGR
-    mask = mask_by_colors(image, np.flip(missings['colors'], 1))
+    mask = maskByColors(image, np.flip(missings['colors'], 1))
 
     # pprint(missings['colors'])
     # pprint(missings['centroids_area'])
-    # mask = mask_by_colors(image, colors)
+    # mask = maskByColors(image, colors)
 
     mask3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
     cv2.imshow("images", np.hstack([image, mask3ch]))

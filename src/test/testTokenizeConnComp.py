@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from config import *
 from src.lib.image2word import getConnectedComponents, positions2chars
-from src.utils.imageProcessing import mask_by_colors
+from src.utils.imageProcessing import maskByColors
 from pprint import pprint
 
 
@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     colors = [np.flip(np.array(color, dtype=np.uint8), 0) for subl in annoted[myImage].values() for color in subl]
     image = cv2.imread(myImagePath)
-    mask = mask_by_colors(image, colors)
+    mask = maskByColors(image, colors)
 
     # pprint(words[myImage])
     print('\n\nconnected components:')

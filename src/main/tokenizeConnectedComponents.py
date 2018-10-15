@@ -7,7 +7,7 @@ import numpy as np
 
 from config import *
 from src.lib.image2word import getConnectedComponents
-from src.utils.imageProcessing import mask_by_colors
+from src.utils.imageProcessing import maskByColors
 from collections import defaultdict
 
 if __name__ == '__main__':
@@ -40,7 +40,7 @@ if __name__ == '__main__':
             imagePath = path.join(color_words, im)
             colorsBGR = [np.flip(np.array(color, dtype=np.uint8), 0) for subl in ch2col.values() for color in subl]
             image = cv2.imread(imagePath)
-            mask = mask_by_colors(image, colorsBGR)
+            mask = maskByColors(image, colorsBGR)
             result.update(getConnectedComponents(im, words[im], mask))
         except KeyError:
             notKeys.append(im)

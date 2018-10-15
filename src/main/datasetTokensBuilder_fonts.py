@@ -1,12 +1,18 @@
 from cv2 import imshow, waitKey, destroyAllWindows, imwrite, imread, IMREAD_GRAYSCALE
 from json import load
 from os import path
-from pprint import pprint
-
 from config import *
 from src.lib.createMinacesLittera import createLetter
 from numpy import invert
 from src.utils.imageProcessing import bbxes_data, mergeBBxes
+
+"""
+
+            Fonts
+            NOT USED ANYMORE
+
+
+"""
 
 
 def symbolsClass():
@@ -36,19 +42,20 @@ def symbolsClass():
     litteraSimpleUpperTks = createLetter(ccToTokens, simpleSeqUpper, vertical=True)
     litteraSpecialTks = createLetter(ccToTokens, specialSeq, vertical=True)
 
-    """
     imshow('littera simple l', litteraSimpleLowerTks)
     waitKey(0)
     destroyAllWindows()
+    print(simpleSeqLower)
 
     imshow('littera simple u', litteraSimpleUpperTks)
     waitKey(0)
     destroyAllWindows()
+    print(simpleSeqUpper)
 
     imshow('littera specials', litteraSpecialTks)
     waitKey(0)
     destroyAllWindows()
-    """
+    print(specialSeq)
 
     # Saving images with simple/special tokens
     if not path.exists(symbolsCarolingian_simpleLower):
@@ -57,13 +64,11 @@ def symbolsClass():
     else:
         print(symbolsCarolingian_simpleLower)
 
-
     if not path.exists(symbolsCarolingian_simpleUpper):
         print("writing ", symbolsCarolingian_simpleUpper)
         imwrite(symbolsCarolingian_simpleUpper, litteraSimpleUpperTks)
     else:
         print(symbolsCarolingian_simpleUpper)
-
 
     if not path.exists(symbolsCarolingian_special):
         print("writing ", symbolsCarolingian_special)
@@ -74,14 +79,15 @@ def symbolsClass():
 
 def getArtificialTokensFromList():
     """
-    From the image containing all input fonts to single image for each
+    From the image containing all input fonts to single image for each one
     :return: None
     """
 
-    lowerTk = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'l', 'm', 'n', 'o', 'p', 'q', 'r', '_s', 's', 't', 'u', 'x']
-    upperTk = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U']
-    specialTk = [',', '.', 'Ca', 'ce', 'de', 'eg', 'epo', 'ex', 'fa', 'fi', 'gl', 'nt', 'pa', 'per', 'pro', 'prop',
-                 'que', 'qui', 'rum', 'semicolon', 'si', 'us']
+    lowerTks = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'l', 'm', 'n', 'o', 'p', 'q', 'r', '_s', 's', 't', 'u',
+                'x']
+    upperTks = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U']
+    specialTks = [',', '.', 'Ca', 'ce', 'de', 'eg', 'epo', 'ex', 'fa', 'fi', 'gl', 'nt', 'pa', 'per', 'pro', 'prop',
+                  'que', 'qui', 'rum', 'semicolon', 'si', 'curl', 'con', 'ca']
 
     lowerImg = invert(imread(symbolsLower, IMREAD_GRAYSCALE))
     upperImg = invert(imread(symbolsUpper, IMREAD_GRAYSCALE))
@@ -127,36 +133,36 @@ def getArtificialTokensFromList():
     # clean up
     specialBBXs = [sb for sb in specialBBXs if sb != (0, 0)]
 
-
     def getBBXS(bbList, image, alphabet, store=False):
         bbxes = []
         for bb, alpha in zip(bbList, alphabet):
-            # print(alpha)
             y, dy = bb[-2:]
             x, dx = bb[-4:-2]
             patch = image[y: dy, x: dx]
             if store:
-                print(alpha)
                 if alpha.isupper():
-                    _alpha = alpha*2
+                    _alpha = alpha * 2
                 elif alpha == ",":
                     _alpha = "comma"
                 elif alpha == ".":
                     _alpha = "fullStop"
                 elif alpha[0] == "_":
                     _alpha = "ending_" + alpha[1:]
+                elif alpha == 'Ca':
+                    _alpha = "CCa"
                 else:
                     _alpha = alpha
-                imwrite(path.join(artificialTokens, _alpha + ".png"), patch)
-                print(path.join(artificialTokens, _alpha + ".png"), '   ', path.exists(path.join(artificialTokens, _alpha + ".png")), '\n')
+
+                currPath = path.join(fontsTokens, _alpha + ".png")
+                if not path.exists(currPath):
+                    imwrite(currPath, patch)
 
             bbxes.append(patch)
         return bbxes
 
-    getBBXS(lowerBBXs, lowerImg, lowerTk, store=True)
-    getBBXS(upperBBXs, upperImg, upperTk, store=True)
+    # getBBXS(lowerBBXs, lowerImg, lowerTk, store=True)
+    # getBBXS(upperBBXs, upperImg, upperTk, store=True)
     getBBXS(specialBBXs, specialImg, specialTk, store=True)
-
 
     """
     for ind, symbol in enumerate(getBBXS(lowerBBXs, lowerImg, alphabet=lowerTk)):

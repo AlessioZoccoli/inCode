@@ -3,7 +3,7 @@ from config import wordsClean
 
 AREA, WIDTH, HEIGHT, A_W = 0, 1, 2, 3
 
-# meanValue:         area                  width            height        a/w
+# meanValues ->        area                  width            height        a/w
 stats = {'a': (149.67737079779226, 18.74862017059709, 17.03211239337682, 8.018377632215357),
          'b': (199.6801242236025, 16.782608695652176, 25.928571428571427, 11.785501921953635),
          'c': (112.54645814167434, 13.615455381784729, 16.515179392824287, 8.206220489923078),
@@ -130,6 +130,8 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 # 'f' '048v/149_1460_34_193.png', 060r_165_264_1424_1835/256_973_36_26.png -> 'fi'
 #     050v/197_710_30_71.png, 057v_542_281_1394_1819/447_1086_37_48.png => 'fu'
 #     059v/235_1405_34_77.png => 'fa' remove
+#     'fi' not 'Si' 058v/775_1485_35_25.png
+#     056r_178_258_1393_1827/398_471_37_88.png double
 # 'e'   doubles: 054r/1118_620_31_40.png, 057r/1036_915_30_42.png, 055v_631_241_1360_1839/776_1312_33_45.png,
 #               048v/637_357_32_46.png, 057r/1036_915_30_42.png, 051v/322_373_24_41.png
 #              '059r/972_184_30_55.png', '049v/433_341_26_38.png',
@@ -193,6 +195,8 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 
 # 'i' double at [0] 047r/626_566_28_44.png
 #       'ü' not i -> 050v/389_928_30_86.png
+#      058v/1016_1317_45_70.png upper case
+#     uppercase 058r/1174_1368_51_112.png
 # 'o' double 051v/1210_572_53_84.png
 #       050r/68_885_31_30.png is an 'M'
 #
@@ -204,12 +208,14 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #     056v/106_349_36_92.png => 'pa'
 #     057v_542_281_1394_1819/507_859_46_124.png => 'pe' remove it
 #     057r/515_1139_42_118.png => pro
+#     060r_165_264_1424_1835/994_1641_49_82.pn   => prop
 #     lower case: 058v/137_980_49_95.png, 058v/137_980_49_95.png
 #          'prop':  040v/1251_1137_44_83.png , 053r/396_932_37_123.png, 059v/300_682_40_77.png
 #           'pp': 050v/408_485_45_50.png, 060v/1239_172_33_66.png
-#           'pp':  050v/804_541_42_45.png, 051v/665_209_35_57.png, 057r/521_591_37_133,
-#                   059r/296_1069_38_47.png, 051v/811_205_39_59.png, 058v/1072_314_46_167.png,
-#                  040v/731_487_36_37.png, 055r/969_1336_35_73.png, 055r/365_1398_39_52.png, 059r/785_1125_37_48.png
+#                 050v/804_541_42_45.png, 051v/665_209_35_57.png, 057r/521_591_37_133,
+#                 059r/296_1069_38_47.png, 051v/811_205_39_59.png, 058v/1072_314_46_167.png,
+#                 040v/731_487_36_37.png, 055r/969_1336_35_73.png, 055r/365_1398_39_52.png, 059r/785_1125_37_48.png
+#
 #           big ornaments: 048r/394_128_50_133.png
 #     'ep'  049v/1100_831_45_63.png, 049v_586_258_1366_1821/1109_798_45_63.png
 # 'r'      double in [0] 040v/1143_111_35_175.png
@@ -223,6 +229,9 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #          single and final = 048v/680_364_35_108.png 049v_586_258_1366_1821/1096_351_42_185.png
 #          FInal but in the middle: 050v/1003_493_37_264.png, remove!
 #          final : 058v/1010_257_46_166.png
+#           046r/951_290_49_266.png last Ss are all upper case
+#           final not double: 040v/202_420_46_94.png  060r_165_264_1424_1835/853_1692_51_118.png
+#
 #
 #  'u'      uppercase thrasholds: areaRatio >= 1.2 widthRatio >= 1.4
 #           050v/129_648_36_86.png ending stroke of Q, 049v/806_1220_35_130.png ending stroke of C

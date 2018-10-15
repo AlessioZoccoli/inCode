@@ -2,18 +2,14 @@ import cv2
 import numpy as np
 
 
-def mask_by_colors(word_img, colors):
+def maskByColors(word_img, colors):
     """
         funzione per creare una maschera su un'immagine,
         a partire da una lista di colori.
-        parametri:
-            - word_img:
-                numpy array di tipo uint8, shape (height,width,channels)
-            - colors:
-                numpy array di tipo uint8. Ogni elemento è nella forma [blue,green,red].
-        return:
-            una maschera con shape (h,w) sull'immagine originaria,
-            che vale 0 se color non c'è, 255 altrimenti.
+        :param word_img: np.ndarray dtype = uint8. shape = (height,width,channels)
+        :param colors: np.ndarray dtype = uint8. Each element in the form [blue,green,red]
+        :return: mask of shape (h,w) on the original one, which takes the value of 0 if colors are not present,
+                255 otherwise.
     """
     mask = np.zeros((word_img.shape[0], word_img.shape[1]), dtype='uint8')
 
@@ -24,7 +20,23 @@ def mask_by_colors(word_img, colors):
     return mask
 
 
-def find_all_colors(img):
+def maskBlackWhite(word_img):
+    """
+
+    :param word_img: np.ndarray dtype = uint8. shape = (height,width,channels)
+    :return: mask of shape (h,w) on the original one, which takes the value of 255 if there is ant non white color,
+                0 otherwise.
+    """
+    mask = np.zeros((word_img.shape[0], word_img.shape[1]), dtype='uint8')
+    BLACK = np.array([0, 0, 0], dtype=np.uint8)
+    NOTWHITE = np.array([244, 244, 244], dtype=np.uint8)
+    colormask = cv2.inRange(word_img, lowerb=BLACK, upperb=NOTWHITE)
+    mask = cv2.bitwise_or(mask, colormask)
+
+    return mask
+
+
+def findAllColors(img):
     """
         elenca tutti i colori di un'immagine.
 
@@ -41,7 +53,7 @@ def find_all_colors(img):
     return allColors
 
 
-def sorted_bbxs(img):
+def sortedBBxs(img):
     """
         elenca tutte le bounding box delle componenti connesse di un'immagine,
         ordinate dalla più piccola alla più grande.
@@ -124,7 +136,7 @@ def getMissingElements(image, annotations):
     :return: colors and bounding boxes for missing elements
     """
     # BGR
-    allColors = find_all_colors(image)
+    allColors = findAllColors(image)
     allColorsComp = set(tuple(sublist) for sublist in (allColors.tolist()))
     # RGB -> BGR
     annotColors = set((tuple(item[::-1])) for sublist in list(annotations) for item in sublist)
@@ -133,7 +145,7 @@ def getMissingElements(image, annotations):
     differSet = allColorsComp - annotColors
     if differSet:
         difference = np.array([np.array(el, dtype=np.uint8) for el in differSet], dtype=np.uint8)
-        missingsMask = mask_by_colors(image, difference)        # processing => BGR
+        missingsMask = maskByColors(image, difference)        # processing => BGR
         missings = centroids_bbxes_areas(missingsMask)          # [(xCentroid, yCentroid, area)]
         difference = np.flip(difference, 1)                     # storing => RGB
     else:
@@ -145,13 +157,13 @@ def getMissingElements(image, annotations):
 def cropByColor(image, colors):
     """
     Crops 'image' by keeping only areas associated with 'colors' via bounding box.
-    Outputs a BW image where selected characters/colors are white and creatBackground is black
+    Outputs a BW image where selected characters/colors are white and createBackground is black
     :param image: str.
     :param colors: numpy array. Colors as a numpy matrix of BGR values of dtype uint8
     :return: numpy.array. Black and white image containing the connected component
     """
 
-    mask = mask_by_colors(image, colors)
+    mask = maskByColors(image, colors)
 
     _, _, stats, _ = cv2.connectedComponentsWithStats(mask)
     compBBX = max(stats[1:], key=lambda s: s[4])                # in case of multiple matches
@@ -166,7 +178,7 @@ def cropByColor(image, colors):
 def extractComponent(image, colors, fromX, toX, fromY, toY):
     """
     Crops 'image' by keeping only areas associated with 'colors' in a given range of pixels.
-    Outputs a BW image where selected characters/colors are white and creatBackground is black
+    Outputs a BW image where selected characters/colors are white and createBackground is black
     :param toY:
     :param fromY:
     :param toX:
@@ -176,19 +188,19 @@ def extractComponent(image, colors, fromX, toX, fromY, toY):
     :return: numpy.array. Black and white image containing the connected component
     """
 
-    mask = mask_by_colors(image, colors)
+    mask = maskByColors(image, colors)
     return mask[fromY: toY, fromX: toX]
 
 
-def creatBackground(width=1400, height=1900, color=0):
+def createBackground(width=1400, height=1900, color=0):
     return np.zeros((height, width), dtype=np.uint8) if color == 0 else np.full((height, width), 255, dtype=np.uint8)
 
 
 def mergeBBxes(thisBB, thatBB):
     """
 
-    :param thisBB: Tuple. First bounding box
-    :param thatBB: Tuple. Second bounding box
+    :param thisBB: Tuple. First bounding box. NO token
+    :param thatBB: Tuple. Second bounding box NO token
     :return: Tuple. bounding box.
 
                  0           1        2      3      4       5      6     7       8
@@ -197,26 +209,79 @@ def mergeBBxes(thisBB, thatBB):
     xCentroid = np.mean([thisBB[0], thatBB[0]])
     yCentroid = np.mean([thisBB[1], thatBB[1]])
     area = thisBB[2] + thatBB[2]
-    width = max([thisBB[6], thatBB[6]]) - min([thisBB[5], thatBB[5]])
-    height = max([thisBB[8], thatBB[8]]) - min([thisBB[7], thatBB[7]])
+
     xStart = min([thisBB[5], thatBB[5]])
-    xEnd = xStart + width
+    xEnd = max([thisBB[6], thatBB[6]])
+    width = xEnd - xStart
+
     yStart = min([thisBB[7], thatBB[7]])
-    yEnd = yStart + height
+    yEnd = max([thisBB[8], thatBB[8]])
+    height = yEnd - yStart
 
     return xCentroid, yCentroid, area, width, height, xStart, xEnd, yStart, yEnd
 
 
-def scaling(targetImg, sourceImg):
+def scaleImageToEqualSize(sourceImg, targetImg):
     """
     Scales input image sourceImg to match targetImg.
     cv2.INTER_AREA is the suggest interpolator for downscaling
-    :param targetImg: cv2.mat, handwritten
-    :param sourceImg: cv2.mat, artificial
-    :return:
+    :param targetImg: np.array (3d matrix), from color words
+    :param sourceImg: np.array (3d matrix), artificial
+    :return: np.array (3d matrix)
     """
     return cv2.resize(sourceImg,
                       None,                                             # no specific out dim
-                      fx=targetImg.shape[1]/sourceImg.shape[1],         # scaling factor Y
-                      fy=targetImg.shape[0]/sourceImg.shape[0],         # # scaling factor X
+                      fx=targetImg.shape[1]/sourceImg.shape[1],         # scale factor Y
+                      fy=targetImg.shape[0]/sourceImg.shape[0],         # scale factor X
                       interpolation=cv2.INTER_AREA)
+
+
+def scaleToBBXSize(sourceImg, targetBBX):
+    """
+    Scales input image sourceImg to match targetBBX shape.
+    cv2.INTER_AREA is the suggest interpolator for downscaling
+    :param targetBBX: tuple, from color words.
+                         0           1        2      3      4       5      6     7       8
+        targetBBX =    (xCentroid, yCentroid, area, width, height, xStart, xEnd, yStart, yEnd)
+    :param sourceImg: np.array (3d matrix), artificial
+    :return: np.array (3d matrix)
+    """
+    if targetBBX[3] != targetBBX[6] - targetBBX[5]:
+        targetBBX[3] = max(targetBBX[3], targetBBX[6] - targetBBX[5])
+    if targetBBX[4] != targetBBX[8] - targetBBX[7]:
+        targetBBX[4] = max(targetBBX[4], targetBBX[8] - targetBBX[7])
+
+    outImage = cv2.resize(src=sourceImg,
+                          dsize=(targetBBX[3], targetBBX[4]),
+                          interpolation=cv2.INTER_AREA)
+
+    return outImage
+
+
+def scale(source, target):
+    """
+    scale source image to target (object)
+    :param source: np.array (3d matrix)
+    :param target: np.array (3d matrix) or tuple (len 8)
+    :return: np.array (3d matrix)
+    """
+    if isinstance(target, tuple) and len(target) == 9:
+        out = scaleToBBXSize(source, target)
+    elif isinstance(target, np.ndarray):
+        out = scaleImageToEqualSize(source, target)
+    else:
+        print('target: ', type(target))
+        raise TypeError
+    return out
+
+
+def getImageWidthHeight(path2img):
+    """
+    IT DOESN'T LOAD THE WHOLE FILE IN MEMORY!!
+    :param path2img: string.
+    :return: tuple (height, width)
+    """
+    from struct import unpack
+    with open(path2img, 'rb') as f:
+        metadata = f.read(25)
+        return unpack('>LL', metadata[16:24])[::-1]

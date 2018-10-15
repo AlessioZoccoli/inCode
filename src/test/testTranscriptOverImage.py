@@ -2,7 +2,7 @@ from os import path, getcwd
 import cv2
 from json import load
 from src.lib.image2word import positions2chars
-from src.utils.imageProcessing import mask_by_colors, getMissingElements
+from src.utils.imageProcessing import maskByColors, getMissingElements
 from numpy import flip
 
 
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     """
     missings = getMissingElements(image, list(annot[i].values()))
     # RGB -> BGR
-    mask = mask_by_colors(image, flip(missings['colors'], 1))
+    mask = maskByColors(image, flip(missings['colors'], 1))
     mask3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
     cv2.imshow('masked', mask3ch)
     cv2.waitKey(0)

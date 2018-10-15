@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from src.utils.imageProcessing import bbxes_data, bbxesCoverage, mask_by_colors
+from src.utils.imageProcessing import bbxes_data, bbxesCoverage, maskByColors
 from itertools import combinations, product
 from numpy import mean, diff, absolute
 
@@ -16,7 +16,7 @@ def char2position(imgPath, charColors, character='', show=False):
             this list exclude possibile disconnected fragments.
     """
     image = cv2.imread(imgPath)
-    mask = mask_by_colors(image, charColors)
+    mask = maskByColors(image, charColors)
 
     if show:
         mask3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
