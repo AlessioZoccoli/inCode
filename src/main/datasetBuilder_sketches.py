@@ -1,19 +1,20 @@
 from os import path
 from cv2 import imread, IMREAD_GRAYSCALE, copyMakeBorder, BORDER_CONSTANT, bitwise_or, imshow, waitKey, \
     destroyAllWindows, error, imwrite
-from numpy import flip, zeros, hstack, argmax, concatenate
-from numpy.ma import arange
-from config import sketchTokens, color_words, images2ColorsBBxesJSON, larger256, trainDir, testDir
+from numpy import flip, zeros, hstack, concatenate
+from config import sketchTokens, color_words, images2ColorsBBxesJSON, larger256, trainDir, testDir, valDir, wordsSimple
 from json import load
-from random import sample, choice, randint
-from src.utils.imageProcessing import  maskByColors, createBackground, scaleToBBXSize
+from random import sample, randint
+from src.utils.imageProcessing import maskByColors, createBackground, scaleToBBXSize
+
 
 getArtifToken = {',': [path.join(sketchTokens, 'comma.png')],
                  'U': [path.join(sketchTokens, 'UU.png')],
-                 'que': [path.join(sketchTokens, 'q.png'), path.join(sketchTokens, 'u.png'), path.join(sketchTokens, 'e.png')],
+                 'que': [path.join(sketchTokens, 'q.png'), path.join(sketchTokens, 'semicolon.png')],
                  'h': [path.join(sketchTokens, 'h.png')],
                  'i': [path.join(sketchTokens, 'i.png')],
                  'O': [path.join(sketchTokens, 'OO.png')],
+                 'od': [path.join(sketchTokens, 'o.png'), path.join(sketchTokens, 'd.png')],
                  'm': [path.join(sketchTokens, 'm.png')],
                  'A': [path.join(sketchTokens, 'AA.png')],
                  'l': [path.join(sketchTokens, 'l.png')],
@@ -45,25 +46,37 @@ getArtifToken = {',': [path.join(sketchTokens, 'comma.png')],
                  'prop': [path.join(sketchTokens, 'pro.png'), path.join(sketchTokens, 'p.png')],
                  'P': [path.join(sketchTokens, 'PP.png')],
                  'Q': [path.join(sketchTokens, 'QQ.png')],
+                 'Qd': [path.join(sketchTokens, 'QQ.png'), path.join(sketchTokens, 'd.png')],
                  'de': [path.join(sketchTokens, 'd.png'), path.join(sketchTokens, 'e.png')],
                  'D': [path.join(sketchTokens, 'DD.png')],
                  'pa': [path.join(sketchTokens, 'p.png'), path.join(sketchTokens, 'a.png')],
                  'u': [path.join(sketchTokens, 'u.png')],
                  'b': [path.join(sketchTokens, 'b.png')],
+                 'bprob': [path.join(sketchTokens, 'b.png'), path.join(sketchTokens, 'pro.png'),
+                           path.join(sketchTokens, 'b.png')],
                  'c': [path.join(sketchTokens, 'c.png')],
+                 'cu': [path.join(sketchTokens, 'c.png'), path.join(sketchTokens, 'u.png')],
+                 'cus': [path.join(sketchTokens, 'c.png'), path.join(sketchTokens, 'curl.png')],
+                 'ci': [path.join(sketchTokens, 'c.png'), path.join(sketchTokens, 'i.png')],
                  'B': [path.join(sketchTokens, 'BB.png')],
                  't': [path.join(sketchTokens, 't.png')],
+                 'ta': [path.join(sketchTokens, 't.png'), path.join(sketchTokens, 'a.png')],
+                 'tus': [path.join(sketchTokens, 't.png'), path.join(sketchTokens, 'curl.png')],
                  'M': [path.join(sketchTokens, 'MM.png')],
                  ';': [path.join(sketchTokens, 'semicolon.png')],  # attention curl is 'us' too!
                  'ue': [path.join(sketchTokens, 'semicolon.png')],  # q;
                  'ui': [path.join(sketchTokens, 'u.png'), path.join(sketchTokens, 'i.png')],
                  'iu': [path.join(sketchTokens, 'i.png'), path.join(sketchTokens, 'u.png')],
+                 'ir': [path.join(sketchTokens, 'i.png'), path.join(sketchTokens, 'r.png')],
+                 'it': [path.join(sketchTokens, 'i.png'), path.join(sketchTokens, 't.png')],
                  'semicolon': [path.join(sketchTokens, 'semicolon.png')],
                  'nt': [path.join(sketchTokens, 'nt.png')],
+                 'ni': [path.join(sketchTokens, 'n.png'), path.join(sketchTokens, 'i.png')],
                  'a': [path.join(sketchTokens, 'a.png')],
                  'epo': [path.join(sketchTokens, 'e.png'), path.join(sketchTokens, 'p.png'),
                          path.join(sketchTokens, 'o.png')],
                  'ce': [path.join(sketchTokens, 'c.png'), path.join(sketchTokens, 'e.png')],
+                 # TODO VERIFY
                  'qui': [path.join(sketchTokens, 'q.png'), path.join(sketchTokens, 'u.png'), path.join(sketchTokens, 'i.png')],
                  'd': [path.join(sketchTokens, 'd.png')],
                  's': [path.join(sketchTokens, 's.png')],
@@ -75,6 +88,9 @@ getArtifToken = {',': [path.join(sketchTokens, 'comma.png')],
                  'ee': [path.join(sketchTokens, 'e.png'), path.join(sketchTokens, 'e.png')],
                  'eee': [path.join(sketchTokens, 'e.png'), path.join(sketchTokens, 'e.png'),
                          path.join(sketchTokens, 'e.png')],
+                 'ec': [path.join(sketchTokens, 'e.png'), path.join(sketchTokens, 'c.png')],
+                 'ecc': [path.join(sketchTokens, 'e.png'), path.join(sketchTokens, 'c.png'),
+                         path.join(sketchTokens, 'c.png')],
                  'g': [path.join(sketchTokens, 'g.png')],
                  'p': [path.join(sketchTokens, 'p.png')],
                  'pro': [path.join(sketchTokens, 'pro.png')],
@@ -86,47 +102,59 @@ getArtifToken = {',': [path.join(sketchTokens, 'comma.png')],
                  }
 
 
-def buildDataset(trainSetSize=0.8, testSetSize=0.1, curriculum=False):
+def buildDataset(trainSetSize=0.8, testSetSize=0.1, curriculum=True):
     """
     Builds the dataset in the form of a set of images containing original manuscript on the left and artificial
     images on the right
 
     :param trainSetSize: float. Percentage of the images to insert into the training set
     :param testSetSize: float. Percentage.
-    :param curriculum: boolena. Use Curriculum Learning.
+    :param curriculum: boolen. Use Curriculum Learning.
+                Simple datapoints in the training set are presented/learnt first. The complexity of the data point is
+                given by the length of the color word contained in it.
     :return: None
     """
     assert trainSetSize + testSetSize <= 1.0
-    """
 
-    # with open(wordsDoublesAndUppercase, 'r') as f:
-        words = load(f)
-        totWords = 10506
+    tooBig = larger256
+
+    with open(images2ColorsBBxesJSON, 'r') as f, open(wordsSimple, 'r') as fws:
+        wordsRich = load(fws)  # contains s_alta, s_mediana, s_ending
+        img2ColsBB = load(f)
+
+        #
+        #   building training/test/validation sets
+        #
+        totWords = 10504 - len(tooBig)
         trainSetSize = int(totWords * trainSetSize)
         testSetSize = int(totWords * testSetSize)
         valSetSize = totWords - trainSetSize - testSetSize
 
-        # all images names
-        totImages = shuffle(words.keys())
+        # randomizing keys
+        # not necessary with sorting ?!
+        totImages = sample(img2ColsBB.keys(), totWords)
+
+        if curriculum:
+            print('\n cv enabled \n')
+            # Curriculum learning: increasing difficul sample to learn.
+            #       We assume short words easier to learn.
+            totImages = sorted(totImages, key=lambda tw: len(img2ColsBB[tw]['tks']))
 
         trainSet = totImages[:trainSetSize]
-        valSet = totImages[trainSetSize:valSetSize]
-        testSet = totImages[valSetSize:testSetSize]
-    
-    
-    if curriculum:
-        # Curriculum learning: increasing difficul sample to learn.
-        #       We assume short words easier to learn.
-        #       Some noise is added (overfitting and exploding gradient?).
-        trainSet = [(im, len(words[im]) + choice(arange(3), p=[0.4, 0.3, 0.3]))
-                    for im in trainSet]
-        trainSet = sorted(trainSet, key=lambda tw: tw[1])
 
-    """
-    tooBig = larger256
+        if curriculum:
+            tempSet = totImages[trainSetSize:]
+            tempSet = sample(tempSet, len(tempSet))
+            testSet = tempSet[:testSetSize]
+            valSet = tempSet[testSetSize:]
+        else:
+            testSet = totImages[trainSetSize:trainSetSize+testSetSize]
+            valSet = totImages[trainSetSize+testSetSize:]
 
-    with open(images2ColorsBBxesJSON, 'r') as f:
-        img2ColsBB = load(f)
+        assert len(trainSet) == trainSetSize
+        assert len(testSet) == testSetSize
+        assert len(valSet) == valSetSize
+
         c = 0
 
         # browsing every directory and image
@@ -190,25 +218,32 @@ def buildDataset(trainSetSize=0.8, testSetSize=0.1, curriculum=False):
                         elif t == 'ue' and ind > 0 and tokens[ind - 1][1] == 'q':
                             t = 'semicolon'
                         # ending
-                        #                                           area
-                        elif t == 's' and ind == len(tokens) - 1 and bbx[2] >= 180.0:  # 185.0555041628122:
+                        elif t[-1] == 's' and ind == len(tokens) - 1\
+                                and wordsRich[imagePath][-1][1] in {'s_mediana', 's_ending'}:
                             t = '_s'
 
                         fakeTokenImage = zeros(realImg.shape)
 
                         try:
-                            if len(t) > 1 and t[1] == t[0]:  # double
-                                fakeTokenImage = imread(getArtifToken[t[0]][0], IMREAD_GRAYSCALE)
-                                fakeTokenImage = concatenate((fakeTokenImage, fakeTokenImage), axis=1)
-                            elif len(t) > 1 and t[1] == t[0] == t[2]:
+                            if len(t) > 1 and t[1] == t[0] == t[2]:
                                 fakeTokenImage = imread(getArtifToken[t[0]][0], IMREAD_GRAYSCALE)
                                 fakeTokenImage = concatenate((fakeTokenImage, fakeTokenImage, fakeTokenImage), axis=1)
+                            elif len(t) > 1 and t[1] == t[0]:  # double
+                                fakeTokenImage = imread(getArtifToken[t[0]][0], IMREAD_GRAYSCALE)
+                                fakeTokenImage = concatenate((fakeTokenImage, fakeTokenImage), axis=1)
                             else:
+                                s_end = False
+                                if ind == len(tokens)-1 and t[-1] == 's' and wordsRich[imagePath][-1][1] in {'s_mediana', 's_ending'}:
+                                    s_end = True
                                 _artifTk = getArtifToken[t]
                                 fakeTokenImage = imread(_artifTk[0], IMREAD_GRAYSCALE)
 
                                 if len(_artifTk) > 1:
                                     subTokens = [imread(s, IMREAD_GRAYSCALE) for s in _artifTk]
+
+                                    if s_end:
+                                        subTokens[-1] = imread(getArtifToken['_s'], IMREAD_GRAYSCALE)
+
                                     maxHeight = max([sk.shape[0] for sk in subTokens])
                                     firstST = subTokens[0]
                                     if firstST.shape[0] == maxHeight:
@@ -219,7 +254,7 @@ def buildDataset(trainSetSize=0.8, testSetSize=0.1, curriculum=False):
                                         fakeTokenImage = copyMakeBorder(fakeTokenImage, topPad, bottomPad, 0, 0,
                                                                         BORDER_CONSTANT, value=[0, 0, 0])
                                     for st in subTokens[1:]:
-                                        topPad = int((maxHeight - st.shape[0])/ 2)
+                                        topPad = int((maxHeight - st.shape[0]) / 2)
                                         bottomPad = maxHeight - topPad - st.shape[0]
                                         st = copyMakeBorder(st, topPad, bottomPad, 0, 0, BORDER_CONSTANT,
                                                             value=[0, 0, 0])
@@ -233,20 +268,20 @@ def buildDataset(trainSetSize=0.8, testSetSize=0.1, curriculum=False):
                         fakeTokenImage = scaleToBBXSize(fakeTokenImage, bbx)
 
                         # coordinates
-                        y = bbx[7]
-                        x = bbx[5]
+                        y, dy = bbx[7:]
+                        x, dx = bbx[5:7]
 
-                        dx = x + fakeTokenImage.shape[1]
-                        dy = y + fakeTokenImage.shape[0]
-                        # lastX = dx
 
-                        if ind > 1:
+                        if ind > 1 and x-lastX < 10 and t[0] != 'g':
                             lb, ub = (2, 6) if ts == tokens[ind-1][1] else (0, 4)
                             randomBackOffset = randint(lb, ub)
                             while x - randomBackOffset < 0:
                                 randomBackOffset = randint(0, x)
                             x -= randomBackOffset
                             dx -= randomBackOffset
+
+                        # previous token updated
+                        lastX = dx
 
                         try:
                             fakeImg[y:dy, x:dx] = bitwise_or(fakeImg[y:dy, x:dx], fakeTokenImage)
@@ -255,7 +290,10 @@ def buildDataset(trainSetSize=0.8, testSetSize=0.1, curriculum=False):
                             break
                         except error:
                             print(fakeImg[y:dy, x:dx].shape, fakeTokenImage.shape)
-                            print(imagePath)
+                            print('x: ', x, 'y: ', y)
+                            print('fakeImg shape ', fakeImg.shape)
+                            print(dx > fakeImg.shape[1], dy > fakeImg.shape[0])
+                            print(ts, imagePath)
                             return None
 
                     # to 256x256
@@ -290,15 +328,24 @@ def buildDataset(trainSetSize=0.8, testSetSize=0.1, curriculum=False):
                     assert combinedImg.shape == (256, 256 * 2)
 
                     # write out
-                    imgName = pageDir + '___' + image
+                    imgName = pageDir + '#' + image
+                    if curriculum:
+                        imgName = str(len(tokens)) + '##' + imgName
 
-                    if c < 20:
-                        print(imagePath)
-                        imshow(str(c), combinedImg)
-                        waitKey(0)
-                        destroyAllWindows()
-                    else:
-                        break
+                    if imagePath in trainSet:
+                        status = imwrite(path.join(trainDir, imgName), combinedImg)
+                        assert status
+                    elif imagePath in testSet:
+                        status = imwrite(path.join(testDir, imgName), combinedImg)
+                        assert status
+                    elif imagePath in valSet:
+                        status = imwrite(path.join(valDir, imgName), combinedImg)
+                        assert status
+
+    print('processed {} images'.format(c))
+    print('trainDir :', trainDir)
+    print('testDir: ', testDir)
+    print('valDir: ', valDir)
 
 
 if __name__ == '__main__':

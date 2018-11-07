@@ -227,6 +227,7 @@ def isUpperCase(bbx, areaThrs, areaUpperBound=1000.0, widthThrs=0.0, heightThrs=
 #          's' Upper case? 059r/924_838_28_25.png, 060v/580_108_28_26.png
 #           ornaments: 050v/71_1092_40_176.png
 #          single and final = 048v/680_364_35_108.png 049v_586_258_1366_1821/1096_351_42_185.png
+#                           046r/586_783_50_147.png
 #          FInal but in the middle: 050v/1003_493_37_264.png, remove!
 #          final : 058v/1010_257_46_166.png
 #           046r/951_290_49_266.png last Ss are all upper case

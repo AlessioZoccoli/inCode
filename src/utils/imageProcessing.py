@@ -24,7 +24,7 @@ def maskBlackWhite(word_img):
     """
 
     :param word_img: np.ndarray dtype = uint8. shape = (height,width,channels)
-    :return: mask of shape (h,w) on the original one, which takes the value of 255 if there is ant non white color,
+    :return: mask of shape (h,w) on the original one, which takes the value of 255 if there is any non white color,
                 0 otherwise.
     """
     mask = np.zeros((word_img.shape[0], word_img.shape[1]), dtype='uint8')
@@ -189,7 +189,7 @@ def extractComponent(image, colors, fromX, toX, fromY, toY):
     """
 
     mask = maskByColors(image, colors)
-    return mask[fromY: toY, fromX: toX]
+    return mask[fromY: toY+1, fromX: toX+1]
 
 
 def createBackground(width=1400, height=1900, color=0):
@@ -221,6 +221,10 @@ def mergeBBxes(thisBB, thatBB):
     return xCentroid, yCentroid, area, width, height, xStart, xEnd, yStart, yEnd
 
 
+def mergeBBxesWrapper(thisBB, thatBB):
+    return mergeBBxes(thisBB[0], thatBB[0])
+
+
 def scaleImageToEqualSize(sourceImg, targetImg):
     """
     Scales input image sourceImg to match targetImg.
@@ -246,11 +250,6 @@ def scaleToBBXSize(sourceImg, targetBBX):
     :param sourceImg: np.array (3d matrix), artificial
     :return: np.array (3d matrix)
     """
-    if targetBBX[3] != targetBBX[6] - targetBBX[5]:
-        targetBBX[3] = max(targetBBX[3], targetBBX[6] - targetBBX[5])
-    if targetBBX[4] != targetBBX[8] - targetBBX[7]:
-        targetBBX[4] = max(targetBBX[4], targetBBX[8] - targetBBX[7])
-
     outImage = cv2.resize(src=sourceImg,
                           dsize=(targetBBX[3], targetBBX[4]),
                           interpolation=cv2.INTER_AREA)
@@ -285,3 +284,22 @@ def getImageWidthHeight(path2img):
     with open(path2img, 'rb') as f:
         metadata = f.read(25)
         return unpack('>LL', metadata[16:24])[::-1]
+
+
+def countColoredHalves(image, bbx):
+    """
+
+    :param image: np.array of (3d matrix). (height, width, channels=3)
+    :return:
+    """
+    subImage = maskBlackWhite(image)
+    halfX = int(bbx[0][3] / 2)
+    halfY = int(bbx[0][4] / 2)
+    sx = subImage[:, :halfX]
+    dx = subImage[:, halfX:]
+    top = subImage[:halfY, :]
+    bottom = subImage[halfY:, :]
+
+    # colored pixels
+    return np.count_nonzero(sx), np.count_nonzero(dx), np.count_nonzero(top), np.count_nonzero(bottom)
+
