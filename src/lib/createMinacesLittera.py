@@ -1,5 +1,6 @@
 from json import load
 from os import path
+from pprint import pprint
 from random import randint
 
 from cv2 import imread
@@ -49,6 +50,7 @@ salve mundi
     # maxWidth = 698
 
     patches = []
+    c = 0
 
     for subString in phrase:
         if subString != ' ':
@@ -62,7 +64,12 @@ salve mundi
             #  <ch2col[subStringImg]['tks']> to fit <tokens>
             found = False
             currStart = 0
+            # all tokens in subStringImg
             transcribed = ch2col[subStringImg]['tks']
+
+            if subStringImg == '057r/449_76_50_129.png':
+                print('transcribed')
+                pprint(transcribed)
 
             while not found and currStart <= len(transcribed) - len(tokens):
                 window = transcribed[currStart:currStart + len(tokens)]
@@ -79,6 +86,17 @@ salve mundi
                 else:
                     currStart += 1
 
+            try:
+                assert not isinstance(yStart, list)
+            except:
+                print(0, windowChar, tokens, subStringImg)
+                break
+            try:
+                assert not isinstance(yEnd, list)
+            except:
+                print(1, windowChar, tokens, subStringImg)
+                break
+
             # colors. Colors may not be indexed with the same keys as bbxes
             for t in tokens:
                 _token = t
@@ -86,7 +104,7 @@ salve mundi
                     if t not in ch2col[subStringImg]['col']:
                         if t.isupper():
                             _token = t.lower()
-                        elif t[1] == t[0]:      # TODO try except -> check size (y)
+                        elif t[1] == t[0]:
                             _token = t[0]
                         elif t in ('us', 'ue'):
                             _token = 'semicolon'
@@ -94,6 +112,17 @@ salve mundi
                             _token = min(ch2col[subStringImg]['tks'], key=lambda e: e[0][2])[1]
                 except IndexError:
                     pass
+
+                try:
+                    assert not isinstance(yStart, list)
+                except:
+                    print(2, windowChar, tokens, subStringImg)
+                    break
+                try:
+                    assert not isinstance(yStart, list)
+                except:
+                    print(3, windowChar, tokens, subStringImg)
+                    break
 
                 if _token:
                     try:
@@ -108,6 +137,7 @@ salve mundi
 
             img = imread(path.join(color_words, subStringImg))
             patch = extractComponent(img, groupedCols, xStart, xEnd, yStart, yEnd)
+
             patches.append((patch, hasBigChar))
 
         else:

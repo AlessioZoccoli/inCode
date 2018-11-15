@@ -10,7 +10,8 @@ from src.lib.image2word import getConnectedComponents
 from src.utils.imageProcessing import maskByColors
 from collections import defaultdict
 
-if __name__ == '__main__':
+
+def connectedComponents():
     """
     INPUT:
         RelativePath/imageName.png
@@ -19,7 +20,7 @@ if __name__ == '__main__':
         <connected components> are lists, one for each cc, containing charachters which make it up.
 
 
-    >>> getConnectedComponents('056r_178_258_1393_1827/768_1024_47_181.png', annotations, bwmask)
+    In[]: getConnectedComponents('056r_178_258_1393_1827/768_1024_47_181.png', annotations, bwmask)
     {'056r_178_258_1393_1827/768_1024_47_181.png': [
                 ['p', 'a', 'r', 'u', 'p', 'n', 'd', 'e'],
                 [['p', 'a', 'r'],  ['u', 'p'],  ['n'],  ['d'],  ['e']]
@@ -28,7 +29,7 @@ if __name__ == '__main__':
 
     """
 
-    with open(wordsDoublesAndUppercase, 'r') as w, open(annotationsCleanJSON, 'r') as a:
+    with open(wordsRichDoublesAndUppercase, 'r') as w, open(annotationsCleanJSON, 'r') as a:
         words = load(w)
         annoted = load(a)
 
@@ -45,8 +46,12 @@ if __name__ == '__main__':
         except KeyError:
             notKeys.append(im)
 
-    print('NOT IN {}! #{}'.format(annotationsCleanJSON, len(notKeys)))
+    print('NOT IN {}!    size: {}'.format(annotationsCleanJSON, len(notKeys)))
     pprint(notKeys)
 
-    with open(connCompsJSON, 'w') as outFile:
+    with open(connCompsRichJSON, 'w') as outFile:
         dump(result, outFile, indent=4, sort_keys=True)
+
+
+if __name__ == '__main__':
+    connectedComponents()

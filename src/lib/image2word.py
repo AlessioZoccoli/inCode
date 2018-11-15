@@ -79,6 +79,7 @@ def positions2chars(imgPath, char2colors, votes=None, show=False):
             - char
             - colors
     :param votes: Mapping between annotated chars and their votes.
+    :param show: Show the mask associated with the characters
     :return: list of tuples in the form of    ((xCentroid, yCentroid, Area, Width, Height, xStart, xEnd, yStart, yEnd), char)
     """
     # toScalar is necessary for  serialization

@@ -1,5 +1,5 @@
 from os import path
-from config import transcriptedWords, pagesTranscriptionsJSON, pagesTranscriptionsTXT
+from config import transcriptedWords_holes, pagesTranscriptionsJSON, pagesTranscriptionsTXT
 from math import floor
 from pprint import pprint
 from collections import defaultdict
@@ -26,7 +26,7 @@ def transcribePages(outJSON=True, outTXT=True):
     :return: None
     """
     pages = defaultdict(list)
-    with open(transcriptedWords, 'r') as f, open(pagesTranscriptionsJSON, 'w') as ftranscr:
+    with open(transcriptedWords_holes, 'r') as f:
         colorWords = load(f)
 
         # group by page
@@ -89,17 +89,18 @@ def transcribePages(outJSON=True, outTXT=True):
 
         # writing to file
         if outJSON:
-            dump(pagesText, ftranscr, sort_keys=True, indent=4)
-
-        print('### {} written'.format(ftranscr))
+            with open(pagesTranscriptionsJSON, 'w') as ftranscr:
+                dump(pagesText, ftranscr, sort_keys=True, indent=4)
+                print('### {} written'.format(ftranscr.name))
 
         if outTXT:
             for page, rows in pagesText.items():
                 with open(path.join(pagesTranscriptionsTXT, page + '.txt'), 'w') as pagetxt:
                     for r in rows:
-                        pagetxt.write(r)
+                        rout = r + '\n'
+                        pagetxt.write(rout)
 
-        print('txt files written')
+            print('### txt files written')
 
 
 if __name__ == '__main__':

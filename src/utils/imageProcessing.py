@@ -128,11 +128,12 @@ def bbxes_data(img):
                    for cent, stat in zip(centr[1:], stats[1:])])
 
 
-def getMissingElements(image, annotations):
+def getMissingElements(image, annotations, BGR=True):
     """
     Returns colors and bounding boxes for missing elements
     :param image: uint8 numpy array, shape (height,width,channels)
     :param annotations: lists of lists, colors grouped bu char
+    :param BGR: Colors in Blue Green Red format.
     :return: colors and bounding boxes for missing elements
     """
     # BGR
@@ -145,9 +146,10 @@ def getMissingElements(image, annotations):
     differSet = allColorsComp - annotColors
     if differSet:
         difference = np.array([np.array(el, dtype=np.uint8) for el in differSet], dtype=np.uint8)
-        missingsMask = maskByColors(image, difference)        # processing => BGR
+        missingsMask = maskByColors(image, difference)          # processing => BGR
         missings = centroids_bbxes_areas(missingsMask)          # [(xCentroid, yCentroid, area)]
-        difference = np.flip(difference, 1)                     # storing => RGB
+        if not BGR:
+            difference = np.flip(difference, 1)                 # storing => RGB
     else:
         difference = []
         missings = []

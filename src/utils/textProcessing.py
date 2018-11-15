@@ -72,8 +72,18 @@ def filteringChars(text, subst=' ', hasUppercase=True):
     :param hasUppercase: boolean. Filtering out upper case chars.
     :return: str. Filtered text
     """
+    """
+        's_mediana': '1',
+        's_ending': '2',
+        'd_stroke': '3',
+        'l_stroke': '4',
+        'b_stroke': '5',
+        'curl': '6' 
+    """
+
     alphabet = {'d', 'n', 'p', 't', 'b', 'c', 'x', 'l', 'm', 's', 'i', 'a', 'u', 'o', 'q', 'g', 'h', 'f', 'e', 'r', ' ',
-                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'X'}
+                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'X',
+                '1', '2', '3', '4', '5', '6'}
 
     filtering = ''.join(char if char in alphabet else subst for char
                         in (''.join(ch if ch in printable else subst for ch in normalize('NFKD', text))))

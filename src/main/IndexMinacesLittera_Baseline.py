@@ -47,8 +47,9 @@ from src.utils.textProcessing import filteringChars
 
 def minaceLecter():
     ix = getIndex(indexName='baselineIndex')
-    # text = filteringChars("Il cammino dell'uomo timorato è minacciato da ogni parte dalle iniquità degli esseri egoistie dalla tirannia degli uomini malvagi. Benedetto sia colui che nel nome della carità e della buona volontà conduce i deboli attraverso la valle delle tenebre, perché egli è in verità il pastore di suo fratello e il ricercatore dei figli smarriti. E la mia giustizia calerà sopra di loro con grandissima vendetta e furiosissimo sdegno su coloro che si proveranno ad ammorbare e infine a distruggere i miei fratelli. E tu saprai che il mio nome è quello del Signore quando farò calare la mia vendetta sopra di te", hasUppercase=True)
-    text = "A B C D E F G H I L M N O P Q R S T U X a b c d e f g h i l m n o p q r s t u x , . Ca Ga ce con curl curly_dash de eg epo ex fa fi gl nt pa per pro prop que qui rum semicolon si ue us"
+    text = filteringChars("Il cammino dell'uomo timorato è minacciato da ogni parte dalle iniquità degli esseri egoistie dalla tirannia degli uomini malvagi. Benedetto sia colui che nel nome della carità e della buona volontà conduce i deboli attraverso la valle delle tenebre, perché egli è in verità il pastore di suo fratello e il ricercatore dei figli smarriti. E la mia giustizia calerà sopra di loro con grandissima vendetta e furiosissimo sdegno su coloro che si proveranno ad ammorbare e infine a distruggere i miei fratelli. E tu saprai che il mio nome è quello del Signore quando farò calare la mia vendetta sopra di te", hasUppercase=True)
+    # text = "1 2 3 4 5 6 A B C D E F G H I L M N O P Q R S T U X a b c d e f g h i l m n o p q r s t u x , . Ca Ga ce con curl curly_dash de eg epo ex fa fi gl nt pa per pro prop que qui rum semicolon si ue us"
+    # text = "que bus qui Ce"
     char2Images, orederedComps = query(ix, text)
     print('\n\n')
     pprint(char2Images)

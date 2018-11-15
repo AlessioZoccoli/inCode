@@ -8,7 +8,7 @@ from whoosh.analysis import KeywordAnalyzer
 from whoosh.index import exists_in, create_in, open_dir
 from whoosh.fields import Schema, ID, KEYWORD, STORED
 
-from config import dataPath, connCompsJSON
+from config import dataPath, connCompsRichJSON
 from json import load
 
 
@@ -78,11 +78,11 @@ def fillIndex(index):
 
                        "c                                   i                    a"
                         |                                                       |
-                        dict(cia['cia'][1])['cia'][0][0]                dict(cia['cia'][1])['cia'][0][-1]
+                cia['cia'][1][0][0]                                 cia['cia'][1][0][-1]
 
     """
 
-    with open(connCompsJSON, 'r') as icc:
+    with open(connCompsRichJSON, 'r') as icc:
         data = load(icc)
 
     writer = index.writer(procs=4, limitmb=128)
@@ -105,15 +105,16 @@ def fillIndex(index):
                                                 "s"         |         _
                                             ]              _
                                         ],
-        
+
         """
 
+        lastComp = [None]
         # nont ending components/ ending component
         for i, comp in enumerate(annot):
             if i < aLength - 1:
                 headFiltered.append(comp)
             else:
-                if comp[-1] in ('s', 'e', 'l', 't', 'm', 'n', 'que', 'bus', 'us'):               # these MUST be in tail
+                if comp[-1] in ('s', 'e', 'l', 't', 'm', 'n', 'que', 'bus'):  # these MUST be in tail
                     tail = comp[-1]
                     if comp[:-1]:
                         headFiltered.append(comp[:-1])
@@ -137,7 +138,7 @@ def fillIndex(index):
         # indexable string
         head = " ".join([" ".join([h for h in hcomp]) for hcomp in hCombinations])
 
-        # each possible char/compound to its position
+        # each possible char/compound in head to its position
         # (char_i, position in values) -> cctrace = (char_i, [positionS in values])
         ch2position = [subdict for subdict in [list(zip(el[0], list(el[1])))
                                                for el in zip(hCombinations, headPositions)]]
@@ -146,14 +147,16 @@ def fillIndex(index):
             for ch, pos in c2p:
                 ccTrace[ch].append(pos)
 
-
         writeArgs = {'image': image}
         if head:
             writeArgs.update({'ccompsHead': head})
-            writeArgs.update({'ccompsHeadTrace': tuple((k, tuple(v)) for k, v in ccTrace.items() if v)})  # tuple are pickable, lists are not
+            writeArgs.update({'ccompsHeadTrace': tuple(
+                (k, tuple(v)) for k, v in ccTrace.items() if v)})  # tuple are pickable, lists are not
         if tail:
             writeArgs.update({'ccompsTail': tail})
 
+        if tail == 'V':
+            print(writeArgs)
         writer.add_document(**writeArgs)
     writer.commit()
 
@@ -165,10 +168,10 @@ def query(index, text):
     :param text:
     :return:
     """
-    char2Images = defaultdict(list)  # eg. 'a': 'path/image.png'
+    char2Images = defaultdict(list)  # eg. 'h': 'path/image.png'
     orderedComps = []  # 'h', 'e', 'll', 'o'
 
-    with open(connCompsJSON, 'r') as ccfile:
+    with open(connCompsRichJSON, 'r') as ccfile:
         inputTextCC = load(ccfile)
 
     getSubTokens = (lambda imgNcoord: [inputTextCC[imgNcoord[0]][cmp][pos] for cmp, pos in imgNcoord[1]])
@@ -198,8 +201,8 @@ def query(index, text):
                     allGrams
                 ))
 
-                tmp_ordComp = []                # sublist orderedDomps for current token
-                collectedChar = 0               # whole word taken
+                tmp_ordComp = []  # sublist orderedDomps for current token
+                collectedChar = 0  # whole word taken
                 i = 0
 
                 while collectedChar < len(t) and i < len(indexGrams):
@@ -211,10 +214,11 @@ def query(index, text):
 
                     if gram not in char2Images:
                         # tail or head
-                        if _start in range(len(t)-3, len(t)) and gram in ('s', 'e', 'l', 't', 'm', 'n', 'que', 'bus', 'us'):
+                        if _start in range(len(t) - 3, len(t)) and gram in (
+                                's', 'e', 'l', 't', 'm', 'n', 'que', 'bus', 'us'):
                             q = qpTail.parse(gram)
                             inTail = True
-                            endGram = "_"+gram
+                            endGram = "_" + gram
                         else:
                             q = qpHead.parse(gram)
                         result = searcher.search(q)
@@ -222,22 +226,15 @@ def query(index, text):
                         # handling results
                         if result and endGram not in char2Images:
                             randchoice = choice(list(result))
-                            if t == 'Ca':
-                                print('\n\n', randchoice, '\n\n')
 
                             if inTail:
                                 char2Images[endGram] = [randchoice['image'], [gram]]
                                 tmp_ordComp.append((lenStart, endGram))
                             else:
                                 positions = choice(dict(randchoice['ccompsHeadTrace'])[gram])
-                                char2Images[gram] = [randchoice['image'], getSubTokens((randchoice['image'], positions))]
+                                char2Images[gram] = [randchoice['image'],
+                                                     getSubTokens((randchoice['image'], positions))]
                                 tmp_ordComp.append((lenStart, gram))
-
-                                if t == 'Ca':
-                                    print('gram ', gram)
-                                    print(positions)
-                                    print(char2Images[gram])
-                                    print(':::')
 
                         elif endGram in char2Images:
                             tmp_ordComp.append((lenStart, endGram))
@@ -251,7 +248,7 @@ def query(index, text):
                     if prune:
                         collectedChar += _length
                         pruned = [el for el in indexGrams[i + 1:]
-                                  if not (_start <= el[0][1] < _length + _start or  # start
+                                  if not (_start <= el[0][1] < _length + _start or               # start
                                           _start <= el[0][0] + el[0][1] - 1 < _length + _start)  # end
                                   ]
                         indexGrams = indexGrams[:i + 1] + pruned
@@ -327,7 +324,7 @@ def find(defaultParser, searcher, pattern, taken, secondaryParser=None):
                         else [randchoice['image'], choice(dict(randchoice['ccompsHeadTrace'])[p])]
                     out.append((p, *metadata))
 
-                elif not result and secondaryParser:            # not in tail, search in head
+                elif not result and secondaryParser:  # not in tail, search in head
                     q = secondaryParser.parse(p)
                     result = searcher.search(q)
                     if result:
@@ -364,7 +361,7 @@ def queryRec(index, text):
     char2Images = defaultdict(list)  # eg. 'a': 'path/image.png'
     orderedComps = []  # 'h', 'e', 'll', 'o'
 
-    with open(connCompsJSON, 'r') as ccfile:
+    with open(connCompsRichJSON, 'r') as ccfile:
         inputTextCC = load(ccfile)
 
     getSubTokens = (lambda imgNcoord: [inputTextCC[imgNcoord[0]][cmp][pos] for cmp, pos in imgNcoord[1]])
@@ -434,8 +431,8 @@ def queryRec(index, text):
                         # ('al', 'dir/name.png', ((0, 1), (0, 2)))
                         if r[0] not in char2Images.keys() and r[1] != '_':
                             if r[2] == [(-1, -1)]:
-                                char2Images['_'+r[0]] = [r[1], [r[0]]]
-                                orderedComps.append('_'+r[0])
+                                char2Images['_' + r[0]] = [r[1], [r[0]]]
+                                orderedComps.append('_' + r[0])
                             else:
                                 char2Images[r[0]] = [r[1], getSubTokens((r[1], r[2]))]
                                 orderedComps.append(r[0])

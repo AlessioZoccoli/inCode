@@ -3,8 +3,7 @@ import ezechieleData
 from src.lib.createMinacesLittera import createLetter
 
 
-if __name__ == '__main__':
-
+def ezechiele():
     ccToTokens = ezechieleData.mapping
     phrase = ezechieleData.verse
     littera = createLetter(ccToTokens, phrase)
@@ -15,3 +14,7 @@ if __name__ == '__main__':
 
     # if not path.exists(ezechieleMinace):
     #    imwrite(ezechieleMinace, toWhitePaper)
+
+
+if __name__ == '__main__':
+    ezechiele()

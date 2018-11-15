@@ -2,10 +2,9 @@ from json import load, dump
 from config import *
 
 
-if __name__ == '__main__':
-
+def image2ColorsBBxes():
     """
-    Joining <annotationsCleanJSON> and <wordsDoublesAndUppercase> so that a file associating sorted, clean tokens to its
+    Joining <annotationsCleanJSON> and <wordsRichDoublesAndUppercase> so that a file associating sorted, clean tokens to its
     colors is produced
     
     
@@ -19,7 +18,7 @@ if __name__ == '__main__':
     """
 
 
-    with open(wordsDoublesAndUppercase, 'r') as annFile, open(annotationsCleanJSON, 'r') as acl:
+    with open(wordsRichDoublesAndUppercase, 'r') as annFile, open(annotationsRichJSON, 'r') as acl:
         annotWords = load(annFile)
         annotColors = load(acl)
 
@@ -34,3 +33,7 @@ if __name__ == '__main__':
 
         with open(images2ColorsBBxesJSON, 'w') as agg:
             dump(output, agg, indent=4, sort_keys=True)
+
+
+if __name__ == '__main__':
+    image2ColorsBBxes()
