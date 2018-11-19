@@ -14,13 +14,19 @@ def cleanAnncolorRich():
     :return: None
     """
 
-    richTokens = {
+    richTokensConv = {
         's_mediana': '1',
         's_ending': '2',
         'd_stroke': '3',
         'l_stroke': '4',
         'b_stroke': '5',
-        'curl': '6'
+        'curl': '6',
+        'qui': '7',
+        'con': '8',
+        'nt': '9',
+        'prop': '10',
+        'pro': '11',
+        'per': '12'
     }
 
     with open(annotationsJSON, 'r') as fa, open(annotationsCleanJSON, 'r') as ca:
@@ -29,11 +35,14 @@ def cleanAnncolorRich():
 
     for img, tk2colors in fullAnnot.items():
         for tk, colors in tk2colors.items():
-            if tk in richTokens:
+            if tk in richTokensConv:
                 try:
-                    cleanAnnot[img].update({richTokens[tk]: colors})
-                    if tk == 'curl':
-                        del cleanAnnot[img]['us']
+                    cleanAnnot[img].update({richTokensConv[tk]: colors})
+                    # remove annecessary annotations. For s_ and _strokes we may have "aggregated" annotations
+                    # so they are not deleted
+                    if tk[0] not in {'s', 'd', 'b', 'l'}:
+                        # qui, con, nt ...
+                        del cleanAnnot[img][tk]
                 except KeyError:
                     pass
 

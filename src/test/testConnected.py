@@ -2,13 +2,16 @@ from collections import defaultdict
 from json import load
 from os import path
 from pprint import pprint
-from config import annotationsCleanJSON, votesJSON, color_words
+
+from cv2 import imshow, imread, waitKey, destroyAllWindows
+
+from config import annotationsRichJSON, votesJSON, color_words
 from src.lib.image2word import positions2chars
 
 
 if __name__ == '__main__':
 
-    with open(annotationsCleanJSON, 'r') as a:
+    with open(annotationsRichJSON, 'r') as a:
         annotations = load(a)
 
     with open(votesJSON, 'r') as v:
@@ -27,11 +30,10 @@ if __name__ == '__main__':
     """
 
     # images = ['055v_631_241_1360_1839/290_1660_34_72.png'] three pieces 'm'
-    images = ["049v/967_224_39_107.png"]
+    images = ["057r/470_420_36_99.png"]
 
     for myImage in images:
         imgPath = path.join(color_words, myImage)
         result = positions2chars(imgPath, annotations[myImage], votes[myImage], show=True)
         img2chars[myImage] = result
-
     # pprint(img2chars)

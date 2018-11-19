@@ -114,7 +114,7 @@ def fillIndex(index):
             if i < aLength - 1:
                 headFiltered.append(comp)
             else:
-                if comp[-1] in ('s', 'e', 'l', 't', 'm', 'n', 'que', 'bus'):  # these MUST be in tail
+                if comp[-1] in ('s', 'e', 'l', 't', 'm', 'n', 'que', 'bus', 'semicolon'):  # these MUST be in tail
                     tail = comp[-1]
                     if comp[:-1]:
                         headFiltered.append(comp[:-1])
@@ -232,8 +232,7 @@ def query(index, text):
                                 tmp_ordComp.append((lenStart, endGram))
                             else:
                                 positions = choice(dict(randchoice['ccompsHeadTrace'])[gram])
-                                char2Images[gram] = [randchoice['image'],
-                                                     getSubTokens((randchoice['image'], positions))]
+                                char2Images[gram] = [randchoice['image'], getSubTokens((randchoice['image'], positions))]
                                 tmp_ordComp.append((lenStart, gram))
 
                         elif endGram in char2Images:

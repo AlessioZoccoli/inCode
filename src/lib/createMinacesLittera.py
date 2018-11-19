@@ -2,8 +2,8 @@ from json import load
 from os import path
 from pprint import pprint
 from random import randint
-
-from cv2 import imread
+from math import e
+from cv2 import imread, bitwise_or
 from numpy import flip, zeros, uint8, invert
 
 from config import images2ColorsBBxesJSON, color_words
@@ -32,12 +32,13 @@ salve mundi
     with open(images2ColorsBBxesJSON, 'r') as ann:
         ch2col = load(ann)
 
-    def goesBelowLine(myString):
+    def goesBelowLine(myString, h=1):
         below = 0
-        if len(set(myString).intersection({'p', 'q', 'g', 'ss'})) > 0:
+        # print(myString, set(myString).intersection({'p', 'q', 'g', 'ss', '1', '2'}))
+        if len(set(myString).intersection({'p', 'q', 'g', 'ss', 'poi'})) > 0:   # 1 = s_med, 2 = s_end
             below = 1
         elif 'h' in myString:
-            below = 1/randint(2, 3)
+            below = 2.5*e**-(h/25)
         return below
 
 
@@ -76,7 +77,7 @@ salve mundi
                     xEnd = window[-1][0][6]
                     yStart = min([tk[0][7] for tk in window])
                     yEnd = max([tk[0][8] for tk in window])
-                    hasBigChar = int(max([(tk[0][4] - meanHeight)*goesBelowLine(tk[1])
+                    hasBigChar = int(max([(tk[0][4] - meanHeight)*goesBelowLine(tk[1], tk[0][4] if 'h' in tk[1] else 1)
                                           for tk in window if goesBelowLine(tk[1]) > 0] or [0.0]))
                 else:
                     currStart += 1
@@ -123,8 +124,8 @@ salve mundi
     #
     def createLetterImage():
         back = createBackground()
-        xOff, xOffRand = 40, 0  # meanWidth = 17 circa
-        # interRowOffset = 70
+        # xOff is the last x of the previous token, xOffRand adds a some random pixels of space
+        xOff, xOffRand = 40, 0
         row = 0
 
         for idx, patch2hbc in enumerate(patches):
@@ -136,7 +137,21 @@ salve mundi
                 previousIsSpace = False
 
             # random proximity to the last taken component
-            randProximity = 0 if xOff == 0 or previousIsSpace else randint(0, 4)
+            # randProximity = 0 if xOff == 0 or previousIsSpace else (randint(0, 4) if phrase[idx][0] != 'g' else 10)
+            randProximity = 0
+            if xOff == 0:
+                randProximity = 0
+            elif previousIsSpace:
+                randProximity = 0 if phrase[idx][0] != 'g' else 2
+            elif phrase[idx][0] != 'g':
+                if idx > 0 and phrase[idx-1][0] in {'s', 'f'}:
+                    randProximity = randint(0, 1)
+                    # print(phrase[idx][0])
+                else:
+                    randProximity = randint(0, 4)
+            elif phrase[idx][0] == 'g':
+                randProximity = round(ptch.shape[1]/3) - randint(1, 3)
+                # print(randProximity, ptch.shape)
 
             interRowOffset = int(90 if row == 0 else 70)
 
@@ -152,7 +167,7 @@ salve mundi
                 _next = 0
 
             if dx + _next <= widthBackground - 45:
-                back[yOff:dy, xOffRand:dx] = ptch
+                back[yOff:dy, xOffRand:dx] = bitwise_or(back[yOff:dy, xOffRand:dx], ptch)
                 xOff += ptch.shape[1]
             elif dy < heightBackground - interRowOffset:
                 row += 1
@@ -161,7 +176,7 @@ salve mundi
                 xOffRand = xOff + randProximity
                 dy = yOff + ptch.shape[0]
                 dx = xOffRand + ptch.shape[1]
-                back[yOff:dy, xOffRand:dx] = ptch
+                back[yOff:dy, xOffRand:dx] = bitwise_or(back[yOff:dy, xOffRand:dx], ptch)
                 xOff += ptch.shape[1]
             else:
                 break

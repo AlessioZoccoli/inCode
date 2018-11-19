@@ -1,11 +1,10 @@
 from cv2 import imshow, waitKey, destroyAllWindows, imwrite, imread, IMREAD_GRAYSCALE, connectedComponentsWithStats
 from os import path
 from pprint import pprint
-
 from numpy.core.umath import invert
-
 from config import *
 from json import load, dump
+
 from src.lib.createMinacesLittera import createLetter
 from src.utils.imageProcessing import bbxes_data, mergeBBxes
 

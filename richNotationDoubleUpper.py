@@ -26,7 +26,13 @@ def enrichNotation():
             'd_stroke': '3',
             'l_stroke': '4',
             'b_stroke': '5',
-            'curl': '6'
+            'curl': '6',
+            'qui': '7',
+            'con': '8',
+            'nt': '9',
+            'prop': '10',
+            'pro': '11',
+            'per': '12'
         }
 
         for image, bbxes in doublesUppers.items():
@@ -36,7 +42,10 @@ def enrichNotation():
             ind2newtokens = []
             for rtoken, rxStart, ryStart in richNotationTks:
                 for ind, (bb, tk) in enumerate(bbxes):
-                    if bb[5] <= rxStart <= bb[6] and bb[7] <= ryStart <= bb[8] and (tk[0] == rtoken[0] or rtoken == 'curl'):
+                    if bb[5] <= rxStart <= bb[6] and bb[7] <= ryStart <= bb[8] \
+                            and (tk == rtoken
+                                 or (tk[0] == rtoken[0] and tk[0] in {'s', 'd', 'l', 'b'})
+                                 or (rtoken == 'curl' and tk == 'us')):
                         ind2newtokens.append((ind, richTokensConv[rtoken]))
             # updating the tokens
             for idx, newtk in ind2newtokens:
