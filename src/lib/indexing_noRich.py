@@ -1,35 +1,15 @@
 from collections import defaultdict
 from pprint import pprint
 from random import choice
-
-import whoosh
 from nltk.util import ngrams, everygrams
 from os import path, mkdir
 from whoosh import qparser
-from whoosh.analysis import KeywordAnalyzer, RegexAnalyzer
+from whoosh.analysis import KeywordAnalyzer
 from whoosh.index import exists_in, create_in, open_dir
 from whoosh.fields import Schema, ID, KEYWORD, STORED
-from whoosh.query import Term
 
 from config import dataPath, connCompsRichJSON, transcriptedWords_holesFree
 from json import load
-
-
-richTokensConv = {
-            's_mediana': '1',
-            's_ending': '2',
-            'd_stroke': '3',
-            'l_stroke': '4',
-            'b_stroke': '5',
-            'curl': '6',
-            'qui': '7',
-            'con': '8',
-            'nt': '9',
-            'prop': '/',
-            'pro': '$',
-            'per': '%',
-            'semicolon': '&'
-        }
 
 
 def minaceSchema():
@@ -42,12 +22,10 @@ def minaceSchema():
         ccompsHeadTrace: Positional index of the tokens and their compounds
 
     """
-    # allows ['$', '%', '&', '(', '/', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-    takeAllSymbolsAnalyzer = RegexAnalyzer(expression=r"[^ ]+")
     return Schema(
         image=ID(stored=True, unique=True),
-        ccompsHead=KEYWORD(stored=True, sortable=True, analyzer=takeAllSymbolsAnalyzer),
-        ccompsTail=KEYWORD(stored=True, sortable=True, analyzer=takeAllSymbolsAnalyzer),
+        ccompsHead=KEYWORD(stored=True, sortable=True),
+        ccompsTail=KEYWORD(stored=True, sortable=True),
         ccompsHeadTrace=STORED,
     )
 
@@ -140,21 +118,18 @@ def fillIndex(index):
                     if i < aLength - 1:
                         headFiltered.append(comp)
                     else:
-                        if comp[-1] in ('s', 'e', 'l', 't', 'm', 'n', 'q&', 'b&', '1', '2'):  # these MUST be in tail
+                        if comp[-1] in ('s', 'e', 'l', 't', 'm', 'n', 'que', 'bus', 'semicolon'):  # these MUST be in tail
                             tail = comp[-1]
                             if comp[:-1]:
                                 headFiltered.append(comp[:-1])
-                        elif comp == ['&']:
-                            if annot[i-1][-1] in {'b', 'q'}:
-                                tail = ''+annot[i-1][-1]+'&'
-                            else:
-                                tail = '&'
-                        elif comp[-2:] in (['q', '&'], ['b', '&']):
+                        elif comp[-2:] in (['q', 'ue'], ['b', 'us']):
                             tail = "".join(comp[-2:])
                             if comp[:-1]:
                                 headFiltered.append(comp[:-1])
                         else:
                             headFiltered.append(comp)
+                if image == '040v/408_309_42_71.png':
+                    print(headFiltered, tail)
             else:
                 headFiltered = ['e']
                 tail = "que u"
@@ -193,15 +168,13 @@ def fillIndex(index):
     writer.commit()
 
 
-def query(index, text, forceHead=False):
+def query(index, text):
     """
 
     :param index: whoosh index
-    :param text: str. Text so search in the index
-    :param forceHead: bool. Only hallow non ending tk to be searched
+    :param text:
     :return:
     """
-    assert isinstance(forceHead, bool)
     char2Images = defaultdict(list)  # eg. 'h': 'path/image.png'
     orderedComps = []  # 'h', 'e', 'll', 'o'
 
@@ -209,14 +182,11 @@ def query(index, text, forceHead=False):
         inputTextCC = load(ccfile)
 
     getSubTokens = (lambda imgNcoord: [inputTextCC[imgNcoord[0]][cmp][pos] for cmp, pos in imgNcoord[1]])
-
     with index.searcher() as searcher:
-        # qpHead = qparser.QueryParser('ccompsHead', index.schema)
-        # qpTail = qparser.QueryParser('ccompsTail', index.schema)
-        # qpHead.remove_plugin_class(qparser.WildcardPlugin)
-        # qpTail.remove_plugin_class(qparser.WildcardPlugin)
-        # qpHead.add_plugin(qparser.RegexPlugin())
-        # qpTail.add_plugin(qparser.RegexPlugin())
+        qpHead = qparser.QueryParser('ccompsHead', index.schema)
+        qpTail = qparser.QueryParser('ccompsTail', index.schema)
+        qpHead.add_plugin(qparser.RegexPlugin())
+        qpTail.add_plugin(qparser.RegexPlugin())
         analyze = KeywordAnalyzer()
 
         for token in analyze(text):
@@ -252,42 +222,24 @@ def query(index, text, forceHead=False):
                     if gram not in char2Images:
                         # tail or head, -3 = prevent from taking wronk tokens
                         if _start in range(len(t) - 3, len(t)) and gram in (
-                                's', 'e', 'l', 't', 'm', 'n', 'q&', 'b&', '&', '1', '2') and not forceHead:
-                            q = Term("ccompsTail", gram)
-                            inTail = True
-                            endGram = "_" + gram
-                        elif _start in range(len(t) - 3, len(t)) and gram in ('q&', 'b&', '&', '1', '2') and forceHead:
-                            q = Term("ccompsTail", gram)
+                                's', 'e', 'l', 't', 'm', 'n', 'que', 'bus', 'us', 'ue'):
+                            q = qpTail.parse(gram)
                             inTail = True
                             endGram = "_" + gram
                         else:
-                            q = Term("ccompsHead", gram)
+                            q = qpHead.parse(gram)
                         result = searcher.search(q)
-
-                        # if gram in richTokensConv.values():
-                        #     print('\n//// ', gram, '\n', result, '\n\n')
 
                         # handling results
                         if result and endGram not in char2Images:
                             randchoice = choice(list(result))
 
                             if inTail:
-                                char2Images[endGram] = [randchoice['image'], list(gram)]
+                                char2Images[endGram] = [randchoice['image'], [gram]]
                                 tmp_ordComp.append((lenStart, endGram))
                             else:
-                                try:
-                                    positions = choice(dict(randchoice['ccompsHeadTrace'])[gram])
-                                except KeyError:
-                                    dict(randchoice['ccompsHeadTrace'])
-                                    return
-                                try:
-                                    char2Images[gram] = [randchoice['image'], getSubTokens((randchoice['image'], positions))]
-                                except IndexError:
-                                    print('randchoice ', randchoice)
-                                    print('positions', positions)
-                                    print(inputTextCC[randchoice['image']])
-                                    print('_________\n\n')
-                                    raise IndexError
+                                positions = choice(dict(randchoice['ccompsHeadTrace'])[gram])
+                                char2Images[gram] = [randchoice['image'], getSubTokens((randchoice['image'], positions))]
                                 tmp_ordComp.append((lenStart, gram))
 
                         elif endGram in char2Images:

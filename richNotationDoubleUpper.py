@@ -30,9 +30,11 @@ def enrichNotation():
             'qui': '7',
             'con': '8',
             'nt': '9',
-            'prop': '10',
-            'pro': '11',
-            'per': '12'
+            'prop': '/',
+            'pro': '$',
+            'per': '%',
+            'semicolon': '&',
+            'rum': '('
         }
 
         for image, bbxes in doublesUppers.items():
@@ -42,14 +44,26 @@ def enrichNotation():
             ind2newtokens = []
             for rtoken, rxStart, ryStart in richNotationTks:
                 for ind, (bb, tk) in enumerate(bbxes):
-                    if bb[5] <= rxStart <= bb[6] and bb[7] <= ryStart <= bb[8] \
-                            and (tk == rtoken
-                                 or (tk[0] == rtoken[0] and tk[0] in {'s', 'd', 'l', 'b'})
-                                 or (rtoken == 'curl' and tk == 'us')):
-                        ind2newtokens.append((ind, richTokensConv[rtoken]))
-            # updating the tokens
+                    if bb[5] <= rxStart <= bb[6] and bb[7] <= ryStart <= bb[8]:
+                        if tk == rtoken or (tk[0] == rtoken[0] and rtoken[:2] in {'s_', 'd_', 'l_', 'b_'} or (rtoken == 'curl' and tk == 'us')):
+                            ind2newtokens.append((ind, richTokensConv[rtoken]))
+                        elif tk in {'bus', 'que', 'ue', 'us'} and rtoken == 'semicolon':
+                            scolon = ''+tk[0]+'&' if len(tk) == 3 else '&'
+                            ind2newtokens.append((ind, scolon))
+
+            # updating the tokens [oldBBX, (new)richTK]
             for idx, newtk in ind2newtokens:
                 bbxes[idx] = [bbxes[idx][0], newtk]
+
+            # replacing 'prop' and 'pro' if present.
+            # prop: Since it is is not present in richNotation by in richTokensConv it will not be replaced automatically
+            # prop: It may be not be present in richNotation (mistranscripted)
+            for ind, bb in enumerate(bbxes):
+                if bb[1] == 'prop':
+                    bbxes[ind] = [bbxes[ind][0], '/']
+                elif bb[1] == 'pro':
+                    bbxes[ind] = [bbxes[ind][0], '$']
+
             # update for output
             richDoubleUppers[image] = bbxes
 

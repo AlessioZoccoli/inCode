@@ -3,7 +3,7 @@ from json import load, dump
 from os import path
 from pprint import pprint
 
-from config import annotationsJSON, annotationsRichJSON, annotationsCleanJSON
+from config import annotationsJSON, annotationsRichJSON, annotationsCleanJSON, wordsDoublesAndUppercase
 from src.utils.textProcessing import translateToken
 
 
@@ -24,27 +24,41 @@ def cleanAnncolorRich():
         'qui': '7',
         'con': '8',
         'nt': '9',
-        'prop': '10',
-        'pro': '11',
-        'per': '12'
+        'prop': '/',
+        'pro': '$',
+        'per': '%',
+        'semicolon': '&',
+        'rum': '('
     }
 
-    with open(annotationsJSON, 'r') as fa, open(annotationsCleanJSON, 'r') as ca:
+    with open(annotationsJSON, 'r') as fa, open(annotationsCleanJSON, 'r') as ca, open(wordsDoublesAndUppercase, 'r') as wdu:
         fullAnnot = load(fa)
         cleanAnnot = load(ca)
+        words = load(wdu)
 
     for img, tk2colors in fullAnnot.items():
         for tk, colors in tk2colors.items():
-            if tk in richTokensConv:
+            if tk in richTokensConv and img in cleanAnnot:
                 try:
                     cleanAnnot[img].update({richTokensConv[tk]: colors})
                     # remove annecessary annotations. For s_ and _strokes we may have "aggregated" annotations
                     # so they are not deleted
-                    if tk[0] not in {'s', 'd', 'b', 'l'}:
+                    if tk[:2] not in {'s_', 'd_', 'b_', 'l_', 'cu', 'se'} and tk in cleanAnnot[img]:
                         # qui, con, nt ...
                         del cleanAnnot[img][tk]
                 except KeyError:
+                    print(img, tk, cleanAnnot[img].keys(), '  ', richTokensConv[tk])
                     pass
+
+    # 'prop' is specials since it does not appear in fullAnnot
+    for im, tk2col in cleanAnnot.items():
+        for tk, col in tk2col.items():
+            if tk == 'prop':
+                cleanAnnot[im].update({'/': col})
+                del cleanAnnot[im]['prop']
+            if tk == 'pro':
+                cleanAnnot[im].update({'$': col})
+                del cleanAnnot[im]['pro']
 
     with open(annotationsRichJSON, 'w') as ar:
         dump(cleanAnnot, ar, indent=4, sort_keys=True)

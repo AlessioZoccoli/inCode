@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+from base64 import b64encode
 
 def maskByColors(word_img, colors):
     """
@@ -128,44 +128,74 @@ def bbxes_data(img):
                    for cent, stat in zip(centr[1:], stats[1:])])
 
 
-def getMissingElements(image, annotations, BGR=True):
+def getMissingElements(img, cols, bbxesTKS, inputBGR=False, returnImage=False):
     """
-    Returns colors and bounding boxes for missing elements
-    :param image: uint8 numpy array, shape (height,width,channels)
-    :param annotations: lists of lists, colors grouped bu char
-    :param BGR: Colors in Blue Green Red format.
-    :return: colors and bounding boxes for missing elements
+    :param img: np.ndarray of type uint8
+    :param cols: list of lists (python lists)
+    :param bbxesTKS:
+                [
+                    [
+                        [coordinates]
+                        't'
+                    ],
+                    ...
+                ]
+    :param inputBGR: boolean. Is input
+    :param returnImage: boolean. np.ndarray of type uint8, same shape of image. Contains missing elements
+    :return: if returnImage np.ndarray of type uint8, same shape of image
     """
-    # BGR
-    allColors = findAllColors(image)
-    allColorsComp = set(tuple(sublist) for sublist in (allColors.tolist()))
-    # RGB -> BGR
-    annotColors = set((tuple(item[::-1])) for sublist in list(annotations) for item in sublist)
-    annotColors.add((255, 255, 255))  # don't include white when applying difference
+    usedMask = getAnnotatedBBxes(img, cols, bbxesTKS, keepSize=True)
+    # missings
+    allColors = [np.flip(c) for c in findAllColors(img)]
+    allColorsMask = np.invert(maskByColors(img, allColors))
+    missingMask = np.bitwise_xor(allColorsMask, usedMask)
+    missingBBxes = bbxes_data(missingMask)
 
-    differSet = allColorsComp - annotColors
-    if differSet:
-        difference = np.array([np.array(el, dtype=np.uint8) for el in differSet], dtype=np.uint8)
-        missingsMask = maskByColors(image, difference)          # processing => BGR
-        missings = centroids_bbxes_areas(missingsMask)          # [(xCentroid, yCentroid, area)]
-        if not BGR:
-            difference = np.flip(difference, 1)                 # storing => RGB
-    else:
-        difference = []
-        missings = []
-    return {'colors': difference, 'centroids_area': missings}
+    output = (missingMask, missingBBxes) if returnImage else missingBBxes
+    return output
 
 
-def cropByColor(image, colors):
+def getAnnotatedBBxes(img, cols, bbxes, keepSize=False):
+    blank = np.zeros(img.shape[:2], dtype=np.uint8)
+    minXStart, maxXEnd = 500, 0
+    minYStart, maxYEnd = 500, 0
+
+    for bb, token in bbxes:
+        t = token
+        if token not in cols:
+            if t.isupper():
+                t = token.lower()
+            elif len(t) > 1 and t[1] == t[0]:
+                t = token[0]
+            elif t in ('us', 'ue'):
+                t = 'semicolon'
+            elif t is ".":              # just in case '.' color hasn't been annotated yet
+                t = min(bbxes, key=lambda e: e[0][2])[1]
+        _colors = np.flip(cols[t], axis=1)
+        # coordinates
+        xStart, xEnd, yStart, yEnd = bb[-4:]
+        minXStart = min(minXStart, xStart)
+        maxXEnd = max(maxXEnd, xEnd)
+        minYStart = min(minYStart, yStart)
+        maxYEnd = max(maxYEnd, yEnd)
+        # sub-image containing s single component
+        newToken = extractComponent(img, _colors, xStart, xEnd, yStart, yEnd)
+        blank[yStart:yEnd, xStart:xEnd] = np.bitwise_or(blank[yStart:yEnd, xStart:xEnd], newToken)
+
+    outImage =  blank if keepSize else blank[minYStart:maxYEnd, minXStart:maxXEnd]
+    return  outImage
+
+
+def cropByColor(img, cols):
     """
     Crops 'image' by keeping only areas associated with 'colors' via bounding box.
     Outputs a BW image where selected characters/colors are white and createBackground is black
-    :param image: str.
-    :param colors: numpy array. Colors as a numpy matrix of BGR values of dtype uint8
+    :param img: str.
+    :param cols: numpy array. Colors as a numpy matrix of BGR values of dtype uint8
     :return: numpy.array. Black and white image containing the connected component
     """
 
-    mask = maskByColors(image, colors)
+    mask = maskByColors(img, cols)
 
     _, _, stats, _ = cv2.connectedComponentsWithStats(mask)
     compBBX = max(stats[1:], key=lambda s: s[4])                # in case of multiple matches
@@ -177,21 +207,22 @@ def cropByColor(image, colors):
     return mask[top: bottom, left: right]
 
 
-def extractComponent(image, colors, fromX, toX, fromY, toY):
+def extractComponent(img, cols, fromX, toX, fromY, toY):
     """
     Crops 'image' by keeping only areas associated with 'colors' in a given range of pixels.
     Outputs a BW image where selected characters/colors are white and createBackground is black
-    :param toY:
-    :param fromY:
-    :param toX:
-    :param fromX:
-    :param image: str.
-    :param colors: numpy array. Colors as a numpy matrix of BGR values of dtype uint8
+    :param toY: bottom, pixel
+    :param fromY: top pixel
+    :param toX: rightmost pixel
+    :param fromX: leftmost pixel
+    :param img: np.ndarray
+    :param cols: numpy array. Colors as a numpy matrix of BGR values of dtype uint8
     :return: numpy.array. Black and white image containing the connected component
     """
 
-    mask = maskByColors(image, colors)
-    return mask[fromY: toY+1, fromX: toX+1]
+    mask = maskByColors(img, cols)
+    return mask[fromY: toY, fromX: toX]
+    # return mask[fromY: toY+1, fromX: toX+1]
 
 
 def createBackground(width=1400, height=1900, color=0):
@@ -305,3 +336,17 @@ def countColoredHalves(image, bbx):
     # colored pixels
     return np.count_nonzero(sx), np.count_nonzero(dx), np.count_nonzero(top), np.count_nonzero(bottom)
 
+
+def img2base64str(image, ext=".png"):
+    """
+    Encodes image as a str in base64 representation.
+            image -> cv2.imencoding -> b64encoding
+    :param image: np.array of uint8 (256, 256, 3)
+    :param ext: image format of the image encoding (before b64 encoding)
+    :return: bytes literal. Represent image encoding as base64
+    """
+    assert image.shape == (256, 256, 3)
+    assert ext in {".png", ".jpg"}
+
+    buffer = cv2.imencode('.png', image)[1]
+    return b64encode(buffer)

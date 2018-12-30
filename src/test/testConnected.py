@@ -2,15 +2,16 @@ from collections import defaultdict
 from json import load
 from os import path
 from pprint import pprint
-
 from cv2 import imshow, imread, waitKey, destroyAllWindows
-
 from config import annotationsRichJSON, votesJSON, color_words
 from src.lib.image2word import positions2chars
 
 
-if __name__ == '__main__':
-
+def testConnected():
+    """
+    Displays each color annotation inside an image, useful to verify connections between components
+    :return: None
+    """
     with open(annotationsRichJSON, 'r') as a:
         annotations = load(a)
 
@@ -30,10 +31,15 @@ if __name__ == '__main__':
     """
 
     # images = ['055v_631_241_1360_1839/290_1660_34_72.png'] three pieces 'm'
-    images = ["057r/470_420_36_99.png"]
+    images = ["056r_178_258_1393_1827/550_1196_38_73.png"]
 
     for myImage in images:
         imgPath = path.join(color_words, myImage)
         result = positions2chars(imgPath, annotations[myImage], votes[myImage], show=True)
+        # pprint(annotations[myImage])
         img2chars[myImage] = result
     # pprint(img2chars)
+
+
+if __name__ == '__main__':
+    testConnected()

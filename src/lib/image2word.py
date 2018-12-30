@@ -296,7 +296,7 @@ def getConnectedComponents(imageName, annotations, bwmask):
             xCtr, yCtr, xStart, xEnd, yStart, yEnd = bbox[0], bbox[1], bbox[5], bbox[6], bbox[7], bbox[8]
             centroid = centroid[:2]     # from annotations
             ctr = [xCtr, yCtr]          # from bwmask connected comps
-            if centroid == ctr or (xStart <= centroid[0] < xEnd and yStart <= centroid[1] <= yEnd):
+            if centroid == ctr or xStart <= centroid[0] < xEnd:
                 break
         connections[i].append(ch)
 

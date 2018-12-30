@@ -1,5 +1,5 @@
 from json import load, dump
-from os import path, getcwd
+from os import path
 from pprint import pprint
 
 import cv2
@@ -29,7 +29,7 @@ def connectedComponents():
 
     """
 
-    with open(wordsRichDoublesAndUppercase, 'r') as w, open(annotationsCleanJSON, 'r') as a:
+    with open(wordsRichDoublesAndUppercase, 'r') as w, open(annotationsRichJSON, 'r') as a:
         words = load(w)
         annoted = load(a)
 
