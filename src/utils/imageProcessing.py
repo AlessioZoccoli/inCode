@@ -2,6 +2,11 @@ import cv2
 import numpy as np
 from base64 import b64encode
 
+from cv2 import bitwise_or
+from numpy import uint8, flip
+from numpy.core.multiarray import zeros
+
+
 def maskByColors(word_img, colors):
     """
         funzione per creare una maschera su un'immagine,
@@ -42,7 +47,7 @@ def findAllColors(img):
 
         parametri:
             - img:
-                numpy array di tipo uint8, shape (height,width,channels)
+                numpy.ndarray di tipo uint8, shape (height,width,channels)
 
         return:
             una lista di valori [b,g,r], corrispondenti ai colori presenti
@@ -60,7 +65,7 @@ def sortedBBxs(img):
 
         parametri:
             - img:
-                numpy array di tipo uint8, shape (height,width). L'immagine deve
+                numpy.ndarray di tipo uint8, shape (height,width). L'immagine deve
                 essere binaria (0 = assenza di inchiostro, 255 = presenza).
         return:
             una lista di tuple (x,y,width,height,area), corrispondenti alle bounding boxes
@@ -77,21 +82,23 @@ def sortedBBxs(img):
 def bbxesCoverage(img):
     """
 
-    :param img: numpy array di tipo uint8, shape (height,width). L'immagine deve
+    :param img: numpy.ndarray di tipo uint8, shape (height,width). L'immagine deve
                 essere binaria (0 = assenza di inchiostro, 255 = presenza).
     :return: una lista di tuple. [(inizioBBOX asse x, fineBBOX asse x)]
     """
     _, _, stats, centr = cv2.connectedComponentsWithStats(img)
     left, width = 0, 2
     # sorted on xCentroids
-    return sorted([(coord[left], coord[left] + coord[width], centroid) for coord, centroid in zip(stats[1:], centr[1:])], key=lambda s: s[2][0])
+    return sorted(
+        [(coord[left], coord[left] + coord[width], centroid) for coord, centroid in zip(stats[1:], centr[1:])],
+        key=lambda s: s[2][0])
 
 
 def centroids(img):
     """
     lists all centroids of the connected components (backround excluded)
 
-    :param img: numpy array dtype = uint8, shape (height,width).
+    :param img: numpy.ndarray dtype = uint8, shape (height,width).
                 Binary image (0 = no ink, 255 = inked).
     :return: centroids list (backgroud excluded = centr[1:]). Centroids type is (numpy.float64, numpy.float64)
     """
@@ -103,7 +110,7 @@ def centroids_bbxes_areas(img):
     """
     Lists all centroids and areas of the connected components (backround excluded), ordered by X axis of each centroid.
 
-    :param img: numpy array dtype = uint8, shape (height,width).
+    :param img: numpy.ndarray dtype = uint8, shape (height,width).
                 Binary image (0 = no ink, 255 = inked).
     :return: list of centroids and areas of the bboxes. List is ordered by x coordinate of each centroid.
              Tuples lists = [(xCentroid, yCentroid, area), ...]
@@ -116,7 +123,7 @@ def bbxes_data(img):
     """
     For each bbox (backround excluded), ordered by X axis of each centroid, bbxes_data returns
     centroid coordinates, area, width, height (approx) start and end of the bbox on x axis.
-    :param img: numpy array dtype = uint8, shape (height,width).
+    :param img: numpy.ndarray dtype = uint8, shape (height,width).
                 Binary image (0 = no ink, 255 = inked).
     :return: list of centroids and areas of the bboxes. List is ordered by x coordinate of each centroid.
                                 0           1        2      3      4       5      6     7       8
@@ -146,7 +153,7 @@ def getMissingElements(img, cols, bbxesTKS, inputBGR=False, returnImage=False):
     """
     usedMask = getAnnotatedBBxes(img, cols, bbxesTKS, keepSize=True)
     # missings
-    allColors = [np.flip(c) for c in findAllColors(img)]
+    allColors = [np.array(c) if inputBGR else np.flip(c) for c in findAllColors(img)]
     allColorsMask = np.invert(maskByColors(img, allColors))
     missingMask = np.bitwise_xor(allColorsMask, usedMask)
     missingBBxes = bbxes_data(missingMask)
@@ -156,6 +163,14 @@ def getMissingElements(img, cols, bbxesTKS, inputBGR=False, returnImage=False):
 
 
 def getAnnotatedBBxes(img, cols, bbxes, keepSize=False):
+    """
+    Masks the color word by keeping annotated glyphs as white pixels and black for everything else.
+    :param img: np.ndarray of uint8. Input color word
+    :param cols: list of lists of ints. list of colors in RGB format.
+    :param bbxes: list of lists. Each list contains coordinates and size as first element and the token as second
+    :param keepSize: boolean. If true keeps the size of the output equal to the input image size.
+    :return: np.ndarray. Output bw image containing glyphs having colors in cols
+    """
     blank = np.zeros(img.shape[:2], dtype=np.uint8)
     minXStart, maxXEnd = 500, 0
     minYStart, maxYEnd = 500, 0
@@ -165,13 +180,14 @@ def getAnnotatedBBxes(img, cols, bbxes, keepSize=False):
         if token not in cols:
             if t.isupper():
                 t = token.lower()
-            elif len(t) > 1 and t[1] == t[0]:
+            elif len(set(t)) == 1 and len(t) > 1:  # doubles
                 t = token[0]
             elif t in ('us', 'ue'):
                 t = 'semicolon'
-            elif t is ".":              # just in case '.' color hasn't been annotated yet
+            elif t is ".":  # just in case '.' color hasn't been annotated yet
                 t = min(bbxes, key=lambda e: e[0][2])[1]
         _colors = np.flip(cols[t], axis=1)
+
         # coordinates
         xStart, xEnd, yStart, yEnd = bb[-4:]
         minXStart = min(minXStart, xStart)
@@ -182,8 +198,8 @@ def getAnnotatedBBxes(img, cols, bbxes, keepSize=False):
         newToken = extractComponent(img, _colors, xStart, xEnd, yStart, yEnd)
         blank[yStart:yEnd, xStart:xEnd] = np.bitwise_or(blank[yStart:yEnd, xStart:xEnd], newToken)
 
-    outImage =  blank if keepSize else blank[minYStart:maxYEnd, minXStart:maxXEnd]
-    return  outImage
+    outImage = blank if keepSize else blank[minYStart:maxYEnd, minXStart:maxXEnd]
+    return outImage
 
 
 def cropByColor(img, cols):
@@ -191,14 +207,14 @@ def cropByColor(img, cols):
     Crops 'image' by keeping only areas associated with 'colors' via bounding box.
     Outputs a BW image where selected characters/colors are white and createBackground is black
     :param img: str.
-    :param cols: numpy array. Colors as a numpy matrix of BGR values of dtype uint8
+    :param cols: numpy.ndarray. Colors as a numpy multidimentional list of BGR values of dtype uint8
     :return: numpy.array. Black and white image containing the connected component
     """
 
     mask = maskByColors(img, cols)
 
     _, _, stats, _ = cv2.connectedComponentsWithStats(mask)
-    compBBX = max(stats[1:], key=lambda s: s[4])                # in case of multiple matches
+    compBBX = max(stats[1:], key=lambda s: s[4])  # in case of multiple matches
     # points of interest
     left = compBBX[0]
     right = left + compBBX[2]
@@ -216,7 +232,7 @@ def extractComponent(img, cols, fromX, toX, fromY, toY):
     :param toX: rightmost pixel
     :param fromX: leftmost pixel
     :param img: np.ndarray
-    :param cols: numpy array. Colors as a numpy matrix of BGR values of dtype uint8
+    :param cols: numpy.ndarray. Colors as a numpy multidimentional list of BGR values of dtype uint8
     :return: numpy.array. Black and white image containing the connected component
     """
 
@@ -262,14 +278,14 @@ def scaleImageToEqualSize(sourceImg, targetImg):
     """
     Scales input image sourceImg to match targetImg.
     cv2.INTER_AREA is the suggest interpolator for downscaling
-    :param targetImg: np.array (3d matrix), from color words
-    :param sourceImg: np.array (3d matrix), artificial
+    :param targetImg: np.ndarray (3d matrix), from color words
+    :param sourceImg: np.ndarray (3d matrix), artificial
     :return: np.array (3d matrix)
     """
     return cv2.resize(sourceImg,
-                      None,                                             # no specific out dim
-                      fx=targetImg.shape[1]/sourceImg.shape[1],         # scale factor Y
-                      fy=targetImg.shape[0]/sourceImg.shape[0],         # scale factor X
+                      None,  # no specific out dim
+                      fx=targetImg.shape[1] / sourceImg.shape[1],  # scale factor Y
+                      fy=targetImg.shape[0] / sourceImg.shape[0],  # scale factor X
                       interpolation=cv2.INTER_AREA)
 
 
@@ -280,7 +296,7 @@ def scaleToBBXSize(sourceImg, targetBBX):
     :param targetBBX: tuple, from color words.
                          0           1        2      3      4       5      6     7       8
         targetBBX =    (xCentroid, yCentroid, area, width, height, xStart, xEnd, yStart, yEnd)
-    :param sourceImg: np.array (3d matrix), artificial
+    :param sourceImg: np.ndarray (3d matrix), artificial
     :return: np.array (3d matrix)
     """
     outImage = cv2.resize(src=sourceImg,
@@ -293,8 +309,8 @@ def scaleToBBXSize(sourceImg, targetBBX):
 def scale(source, target):
     """
     scale source image to target (object)
-    :param source: np.array (3d matrix)
-    :param target: np.array (3d matrix) or tuple (len 8)
+    :param source: np.ndarray (3d matrix)
+    :param target: np.ndarray (3d matrix) or tuple (len 8)
     :return: np.array (3d matrix)
     """
     if isinstance(target, tuple) and len(target) == 9:
@@ -322,7 +338,8 @@ def getImageWidthHeight(path2img):
 def countColoredHalves(image, bbx):
     """
 
-    :param image: np.array of (3d matrix). (height, width, channels=3)
+    :param image: np.ndarray of (3d matrix). (height, width, channels=3)
+    :param bbx: list ints. xCentroid, yCentroid, area, width, height, xStart, xEnd, yStart, yEnd
     :return:
     """
     subImage = maskBlackWhite(image)
@@ -341,7 +358,7 @@ def img2base64str(image, ext=".png"):
     """
     Encodes image as a str in base64 representation.
             image -> cv2.imencoding -> b64encoding
-    :param image: np.array of uint8 (256, 256, 3)
+    :param image: np.ndarray of uint8 (256, 256, 3)
     :param ext: image format of the image encoding (before b64 encoding)
     :return: bytes literal. Represent image encoding as base64
     """
@@ -350,3 +367,4 @@ def img2base64str(image, ext=".png"):
 
     buffer = cv2.imencode('.png', image)[1]
     return b64encode(buffer)
+

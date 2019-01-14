@@ -28,7 +28,7 @@ def textToClippings(text):
 
 
 def ezechieleTest256(ccToTokens=ezechieleData.mapping, phrase=ezechieleData.verse):
-    littera = createLetter(ccToTokens, phrase, sketch=True)
+    littera = createLetter(ccToTokens, phrase, is256=True)
     imshow('lectera minaces', littera)
     waitKey(0)
     destroyAllWindows()

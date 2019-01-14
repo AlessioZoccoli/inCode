@@ -1,7 +1,7 @@
 from json import load, dump
 
 from pprint import pprint
-from src.utils.imageProcessing import getMissingElements, getAnnotatedBBxes
+from src.utils.imageProcessing import getMissingElements
 from cv2 import imread, imshow, waitKey, destroyAllWindows
 from config import color_words, annotationsRichJSON, wordsRichDoublesAndUppercase
 

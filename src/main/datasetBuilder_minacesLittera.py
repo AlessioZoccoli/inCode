@@ -1,43 +1,12 @@
 from os import path
-from pprint import pprint
 from src.lib.indexing import getIndex, query
 from json import load
-from cv2 import imread, imwrite, bitwise_or, imshow, waitKey, destroyAllWindows
-from random import sample, randint
+from cv2 import imread, imwrite, bitwise_or
+from random import sample
 from config import *
-from numpy import zeros, uint8, flip, hstack, ones
-from src.utils.imageProcessing import extractComponent
+from numpy import zeros, uint8, hstack
+from src.utils.imageProcessing import getAnnotatedBBxes
 from src.lib.createMinacesLittera import goesBelowLine, meanHeight, createLetter, SizeException
-
-
-def getWord(image, colors, bbxes):
-    blank = zeros(image.shape[:2], dtype=uint8)
-    minXStart, maxXEnd = 500, 0
-    minYStart, maxYEnd = 500, 0
-
-    for bb, token in bbxes:
-        t = token
-        if token not in colors:
-            if t.isupper():
-                t = token.lower()
-            elif t[1] == t[0]:
-                t = token[0]
-            elif t in ('us', 'ue'):
-                t = 'semicolon'
-            elif t is ".":  # just in case '.' color hasn't been annotated yet
-                t = min(bbxes, key=lambda e: e[0][2])[1]
-        _colors = flip(colors[t], axis=1)
-        # coordinates
-        xStart, xEnd, yStart, yEnd = bb[-4:]
-        minXStart = min(minXStart, xStart)
-        maxXEnd = max(maxXEnd, xEnd)
-        minYStart = min(minYStart, yStart)
-        maxYEnd = max(maxYEnd, yEnd)
-        # sub-image containing s single component
-        newToken = extractComponent(image, _colors, xStart, xEnd, yStart, yEnd) # extractComponent(image, _colors, xStart, xEnd - 1, yStart, yEnd - 1)
-        blank[yStart:yEnd, xStart:xEnd] = bitwise_or(blank[yStart:yEnd, xStart:xEnd], newToken)
-
-    return blank[minYStart:maxYEnd, minXStart:maxXEnd]
 
 
 def datasetBuilderMinaceLetter(trainSetProp=0.9):
@@ -50,7 +19,7 @@ def datasetBuilderMinaceLetter(trainSetProp=0.9):
         totNumWords = len(holesFree)
         imagesShuffled = sample(holesFree, totNumWords)
         trainingSetSize = round(totNumWords * trainSetProp)
-        testSetSize = totNumWords - trainingSetSize
+        # testSetSize = totNumWords - trainingSetSize
 
         def len2Image(imageName):
             page, image = imageName.split('/')
@@ -89,8 +58,8 @@ def datasetBuilderMinaceLetter(trainSetProp=0.9):
                 # TARGET = manuscript/real image
                 targetColors = wordsNColors[imTrain]['col']
                 targetBBxes = wordsNColors[imTrain]['tks']
-                tarhetImage = imread(color_words + '/' + imTrain)
-                target = getWord(tarhetImage, targetColors, targetBBxes)
+                targetImage = imread(color_words + '/' + imTrain)
+                target = getAnnotatedBBxes(targetImage, targetColors, targetBBxes, keepSize=True)
                 #         fitting the 256x256 format
                 target256 = zeros((256, 256), dtype=uint8)
                 hasBigChar = int(max([(tk[0][4] - meanHeight) * goesBelowLine(tk[1])
@@ -107,11 +76,11 @@ def datasetBuilderMinaceLetter(trainSetProp=0.9):
                 #       CONDITION 1 = minaces littera with singly taken tokens attached one another
                 char2Images, orederedComps = query(index, text=" ".join(tokensList), forceHead=len(tokensList) > 1)
                 conditionAttached = createLetter(char2Images, orederedComps, toWhitePaper=False,
-                                                 sketch=True, separate=False)
+                                                 is256=True, separate=False)
                 a2bAttached = hstack((target256, conditionAttached))
                 #
                 #       CONDITION 2 = minaces littera with singly taken tokens separated by spaces
-                conditionSeparate = createLetter(char2Images, orederedComps, toWhitePaper=False, sketch=True,
+                conditionSeparate = createLetter(char2Images, orederedComps, toWhitePaper=False, is256=True,
                                                  separate=True)
                 a2bSeparate = hstack((target256, conditionSeparate))
 
@@ -178,8 +147,8 @@ def datasetBuilderMinaceLetter(trainSetProp=0.9):
                 # TARGET = manuscript/real image
                 targetColors = wordsNColors[imTest]['col']
                 targetBBxes = wordsNColors[imTest]['tks']
-                tarhetImage = imread(color_words + '/' + imTest)
-                target = getWord(tarhetImage, targetColors, targetBBxes)
+                targetImage = imread(color_words + '/' + imTest)
+                target = getAnnotatedBBxes(targetImage, targetColors, targetBBxes)
                 #         fitting the 256x256 format
                 target256 = zeros((256, 256), dtype=uint8)
                 hasBigChar = int(max([(tk[0][4] - meanHeight) * goesBelowLine(tk[1])
@@ -196,14 +165,14 @@ def datasetBuilderMinaceLetter(trainSetProp=0.9):
                 #       CONDITION 1 = minaces littera with ligatures
                 char2Images, orederedComps = query(index, text="".join(tokensList))
                 conditionAttached = createLetter(char2Images, orederedComps, toWhitePaper=False,
-                                                 sketch=True)
+                                                 is256=True)
                 a2bAttached = hstack((target256, conditionAttached))
                 #
                 #       CONDITION 2 = minaces littera without ligatures
                 char2Images, orederedComps = query(index, text=" ".join(tokensList),
                                                    forceHead=len(tokensList) > 1)
                 conditionSeparate = createLetter(char2Images, orederedComps, toWhitePaper=False,
-                                                 sketch=True, separate=True)
+                                                 is256=True, separate=True)
                 a2bSeparate = hstack((target256, conditionSeparate))
 
                 # check sizes

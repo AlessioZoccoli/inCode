@@ -59,7 +59,7 @@ class SizeException(Exception):
     pass
 
 
-def createLetter(ccToTokens, phrase, toWhitePaper=True, vertical=False, width=widthBackground, height=heightBackground, showConComps=False, sketch=False, separate=False):
+def createLetter(ccToTokens, phrase, toWhitePaper=True, vertical=False, width=widthBackground, height=heightBackground, showConComps=False, is256=False, separate=False):
     """
     Creates the menace letter from a given phrase and ccToTokens (data related to phrase)
 
@@ -76,12 +76,12 @@ def createLetter(ccToTokens, phrase, toWhitePaper=True, vertical=False, width=wi
     :param width: int. Width of the letter
     :param height: int. Height of the letter
     :param showConComps: bool. Highlights each different bounding box
-    :param sketch: bool. Output will fit a 256x256 image and will center the string
+    :param is256: bool. Output will fit a 256x256 image and will center the string
     :param separate: bool. Output is a menace letter without legature/connected components,
                     just single tokens separataed by space
     :return: (height,width)-sized image representing the menace letter
     """
-    if sketch:
+    if is256:
         width, height = 256, 256
 
     with open(images2ColorsBBxesJSON, 'r') as ann:
@@ -177,8 +177,8 @@ def createLetter(ccToTokens, phrase, toWhitePaper=True, vertical=False, width=wi
                 _yend = yEnd[idx]
 
                 # guard for sketches
-                if sketch and (_xend-_xstart > 256 or _yend-_ystart > 256):
-                    raise SizeException('sketch but comp width {}, height {}! \n', _xend-_xstart, _yend-_ystart)
+                if is256 and (_xend - _xstart > 256 or _yend - _ystart > 256):
+                    raise SizeException('is256 but comp width {}, height {}! \n', _xend-_xstart, _yend-_ystart)
                 # new connected component to be inserted
                 newComp = extractComponent(img, gc, _xstart, _xend, _ystart, _yend)
                 try:
@@ -199,26 +199,26 @@ def createLetter(ccToTokens, phrase, toWhitePaper=True, vertical=False, width=wi
 
         # sustring is space
         else:
-            if not sketch:
+            if not is256:
                 spaceDim = (randint(3, 5), round(meanHeight))
                 space = zeros(spaceDim, dtype=uint8)
                 patches.append((space, 0.0))
 
     interLine = None
-    if sketch:
-        # this is a special additive horizontal offset and is used in case it is sketch mode
-        # since a sketch is a one-liner line*lineOffset is not suitable
+    if is256:
+        # this is a special additive horizontal offset and is used in case it is is256 mode
+        # since a is256 is a one-liner line*lineOffset is not suitable
         interLine = 3
     elif height < heightBackground:
         interLine = min([p[0].shape[0] for p in patches])
 
     # for sketches: if word is longer than 256 discard, otherwise take it and center it inside the image
     interTokenSpace = 0
-    if sketch:
+    if is256:
         interTokenSpace = 5 if separate else 0
         wordWidth = sum([p[0].shape[1] for p in patches]) + (len(patches)-1)*interTokenSpace
         if wordWidth > 256:
-            raise SizeException('sketch but {} > 256'.format(wordWidth))
+            raise SizeException('is256 but {} > 256'.format(wordWidth))
 
     #
     #   Creating the image
@@ -228,9 +228,9 @@ def createLetter(ccToTokens, phrase, toWhitePaper=True, vertical=False, width=wi
         Creates the final image
         :param heightPX: int. Height
         :param widthPX: int. Width
-        :param interLineOffsetFixed: distance between line is fixed if sketch (only one line is needed)
+        :param interLineOffsetFixed: distance between line is fixed if is256 (only one line is needed)
         :param separe: bool. Connected components or single tokens
-        :param tokensSpace: int. space bitwin token (if sketch)
+        :param tokensSpace: int. space bitwin token (if is256)
         :return: np.ndarray of shape (heightPX, widthPX)
         """
         back = createBackground(heightPX, widthPX)
@@ -239,7 +239,7 @@ def createLetter(ccToTokens, phrase, toWhitePaper=True, vertical=False, width=wi
             xOff, xOffRand, lineOffset = 40, 0, 0
             # right space of the sheet
             rightBound = 45
-        elif sketch:
+        elif is256:
             xOff = round((256 - wordWidth)/2)
             # right space of the sheet
             rightBound = 0
@@ -263,7 +263,7 @@ def createLetter(ccToTokens, phrase, toWhitePaper=True, vertical=False, width=wi
             # random proximity to the last taken component
             # randProximity = 0 if xOff == 0 or previousIsSpace else (randint(0, 4) if phrase[idx][0] != 'g' else 10)
             randProximity = 0
-            if not sketch:
+            if not is256:
                 if xOff == 0:
                     randProximity = 0
                 elif previousIsSpace:
@@ -277,7 +277,7 @@ def createLetter(ccToTokens, phrase, toWhitePaper=True, vertical=False, width=wi
                     randProximity = round(ptch.shape[1]/3) - randint(1, 3)
 
             interLineOffset = int(90 if line == 0 else 70) if not interLineOffsetFixed else interLineOffsetFixed
-            if not sketch:
+            if not is256:
                 lineOffset = line * interLineOffset
 
             hasCurlMultip = 2 if hasBlankSpace and 2*indx < len(phrase) else 1
@@ -295,10 +295,10 @@ def createLetter(ccToTokens, phrase, toWhitePaper=True, vertical=False, width=wi
             if dx + _next <= width - rightBound:
                 back[yOff:dy, xOffRand:dx] = bitwise_or(back[yOff:dy, xOffRand:dx], ptch)
                 xOff += ptch.shape[1]
-                if sketch and tokensSpace > 0 and xOff+tokensSpace < width - rightBound:
+                if is256 and tokensSpace > 0 and xOff+tokensSpace < width - rightBound:
                     xOff += tokensSpace
 
-            elif dy < height - interLineOffset and not sketch:
+            elif dy < height - interLineOffset and not is256:
                 print('newline ', line, ' ### yOff {}'.format(yOff))
                 line += 1
                 bigCharOffset = round(interLineOffset - ptch.shape[0] + hbc)
