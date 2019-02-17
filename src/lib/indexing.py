@@ -77,30 +77,38 @@ def fillIndex(index):
     :return: None
 
         example:
-            query('cia')
+            Indexing image '055r/526_989_46_120.png' which contains the word 'fiducia'.
+            Let's assume some glyphs are written with a legature producing connected components:
 
-            result =
-                {'cia': ('055r/526_989_46_120.png',
-                             (('du', (((1, 0), (1, 1)),)),
-                              ('f', (((0, 0),),)),
-                              ('fi', (((0, 0), (0, 1)),)),
-                              ('i', (((0, 1),), ((2, 1),))),
-                              ('c', (((2, 0),),)),
-                              ('ci', (((2, 0), (2, 1)),)),
-                              ('d', (((1, 0),),)),
-                              ('cia', (((2, 0), (2, 1), (2, 2)),)),
-                              ('ia', (((2, 1), (2, 2)),)),
-                              ('a', (((2, 2),),)),
-                              ('u', (((1, 1),),))),
-                             (-1, -1)),
-                 '...': ...
-                 }
+                fi du cia => connected_components = [[f,i], [d, u], [c,i,a]]
+            
+            We want to index for each image both the single glyphs and the connected components.
 
-            Getting 'cia' bbxes:
 
-                       "c                                   i                    a"
-                        |                                                       |
-                cia['cia'][1][0][0]                                 cia['cia'][1][0][-1]
+                        ('055r/526_989_46_120.png',
+                            (('du', (((1, 0), (1, 1)),)),
+                            ('f', (((0, 0),),)),
+                            ('fi', (((0, 0), (0, 1)),)),
+                            ('i', (((0, 1),), ((2, 1),))),
+                            ('c', (((2, 0),),)),
+                            ('ci', (((2, 0), (2, 1)),)),
+                            ('d', (((1, 0),),)),
+                            ('cia', (((2, 0), (2, 1), (2, 2)),)),
+                            ('ia', (((2, 1), (2, 2)),)),
+                            ('a', (((2, 2),),)),
+                            ('u', (((1, 1),),))),
+                            (-1, -1))
+                        )
+
+
+            In the code above each connected component eg. 'du' is represented by the same string
+            and the coordinates inside the connected_components data structure as (comp, char in position n)
+            (-1,-1) beacause there is no special connected component (abbreviation) at the end.
+            Some glyphs have a different appearence when written at the end.
+
+
+            Each connected components is what we have called ccompsHead in the schema definition,
+            while ccompsHeadTrace is associated with the coordinates.
 
     """
 
@@ -118,17 +126,17 @@ def fillIndex(index):
             headFiltered = []
 
             """
-            edit to fit
                 "060v/1244_1049_33_94.png": [
                                                 [
                                                     "s",
                                                     "e"
                                                 ],
-                                                [              _           _
+                                                [              _          _
                                                     "d",        |   tail   |    head  
                                                     "e",        |          |
-                                                    "s"         |         _
-                                                ]              _
+                                                                |         -          
+                                                    "s"         |
+                                                ]              -
                                             ],
     
             """
@@ -199,7 +207,14 @@ def query(index, text, forceHead=False):
     :param index: whoosh index
     :param text: str. Text so search in the index
     :param forceHead: bool. Only hallow non ending tk to be searched
-    :return:
+    :return: a map and a list.
+            The map has as keys string or substrings of text retrieved by the index and as values the images
+            that contains the glyphs/connected components and these last as strings.
+
+
+            Input: query("ae")
+            Output: 
+
     """
     assert isinstance(forceHead, bool)
     char2Images = defaultdict(list)  # eg. 'h': 'path/image.png'
@@ -223,6 +238,7 @@ def query(index, text, forceHead=False):
             t = token.text
             if t not in char2Images:
                 # first, we search for all possible n-grams for a given token
+                # allGrams is the power set of the letters that make up the word
                 allGrams = []
                 for n in range(len(t)):
                     for ngram in ngrams(t, len(t) - n):
@@ -232,13 +248,14 @@ def query(index, text, forceHead=False):
                 positional indices for grams
                 this will be used to find the smaller substrings
                 (length substr, offset Left, substr)
+
                 """
                 indexGrams = list(zip(
                     [(n + 1, j) for n in range(len(t)) for j in range(len(t) - n)[::-1]][::-1],
                     allGrams
                 ))
 
-                tmp_ordComp = []  # sublist orderedDomps for current token
+                tmp_ordComp = []   # sublist orderedDomps for current token
                 collectedChar = 0  # whole word taken
                 i = 0
 
