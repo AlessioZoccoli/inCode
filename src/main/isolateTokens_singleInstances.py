@@ -41,28 +41,29 @@ convertBack = {
 }
 
 
-def isolateTokensTranscription(lateralHoles=False):
+def isolatedTokensInstancesAndTranscription(lateralHoles=False):
     """
-    Isolates each token in the word "di" in "040v/1011_653_23_38.png". Each token is repesented as a bw mask on the
-    original image, where background and the other tokens are black while the target token is white.
-    Transcription of "di" (the string itself) is included in the output
-    :return: dict of list.
+    Isolates each token in the word "pars" in "040v/1203_168_31_64.png".
+    For each token T in a given word exists an image representing a mask of T on the original image, where T is white and every other
+    pixel is black.
+    :param lateralHoles: boolean. Consider words where there are no missing transcriptions at the ends.
+    :return: dict of list. Key = image name, value = [transcription, [base64 representation of each token]]
 
-    "par<s_mediana>" -> "pars"
+        "par<s_mediana>" -> "pars"
 
-    output = {
-                "040v/1203_168_31_64.png": {
-                                                [
-                                                    "pars",
+        output = {
+                    "040v/1203_168_31_64.png": {
                                                     [
-                                                        ("p", b'...'),
-                                                        ("a", b'...'),
-                                                        ("r", b'...'),
-                                                        ("s", b'...')
+                                                        "pars",
+                                                        [
+                                                            ("p", b'...'),
+                                                            ("a", b'...'),
+                                                            ("r", b'...'),
+                                                            ("s", b'...')
+                                                        ]
                                                     ]
-                                                ]
-                                            }
-             }
+                                                }
+                 }
     """
 
     # output
@@ -160,7 +161,7 @@ def isolateTokensTranscription(lateralHoles=False):
 
 
 if __name__ == "__main__":
-    isolatedTkTranscription = isolateTokensTranscription()
+    isolatedTkTranscription = isolatedTokensInstancesAndTranscription()
 
     with open(isolatedTokensTranscription_txt, "w") as outTxt:
         for entry in isolatedTkTranscription:

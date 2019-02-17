@@ -5,22 +5,8 @@ from src.utils.textProcessing import filteringChars
 
 
 """
-          STATS(old)
-
-    length      count
-    of cc
-         1:     17343,
-         2:     5469,
-         3:     1940,
-         4:     764,
-         5:     380,
-         6:     132,
-         7:     64,
-         8:     21,
-         9:     10,
-         10:    2
-         
-         
+    STATS
+                  
     Counting connected components length and their frequency (doubles counts as 2 while specials tokens as 1, the latter
     are unsplittable)
 

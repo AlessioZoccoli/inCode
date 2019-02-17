@@ -23,7 +23,8 @@ richTokensConv = {
             'prop': '/',
             'pro': '$',
             'per': '%',
-            'semicolon': '&'
+            'semicolon': '&',
+            'rum': '('
         }
 
 

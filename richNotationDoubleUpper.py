@@ -8,7 +8,7 @@ def enrichNotation():
     """
     In config.wordsDoublesAndUppercase does not containts characteristic tokens like "d_stroke" or "s_mediana"
     this method adds these tokens by alligning bbxes/tokens from config.words with the above file (based
-    on the first lecter and xCoord)
+    on the first letter and xCoord)
     :return: None
     """
 

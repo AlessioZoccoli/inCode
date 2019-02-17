@@ -43,11 +43,6 @@ def datasetBuilderMinaceLetter(trainSetProp=0.9):
         #                     '053r/273_592_32_78.png', '053r/854_930_35_31.png', '051v/1073_1185_45_128.png',
         #                     '053r/922_1378_36_35.png', '054r/1086_285_49_137.png', '054r/743_565_46_99.png']
 
-        #############################
-        #                           #
-        #       TRAINING SET        #
-        #                           #
-        #############################
         print('\n\n#############################')
         print('TRAINING SET BUILDING')
         print('#############################\n')
@@ -56,7 +51,7 @@ def datasetBuilderMinaceLetter(trainSetProp=0.9):
             try:
                 imName = len2Image(imTrain)
                 # TARGET = manuscript/real image
-                targetColors = wordsNColors[imTrain]['col']
+                targetColors = wordsNColors[imTrain]["col"]
                 targetBBxes = wordsNColors[imTrain]['tks']
                 targetImage = imread(color_words + '/' + imTrain)
                 target = getAnnotatedBBxes(targetImage, targetColors, targetBBxes, keepSize=True)
@@ -130,12 +125,6 @@ def datasetBuilderMinaceLetter(trainSetProp=0.9):
                 print(s)
                 pass
 
-        #############################
-        #                           #
-        #          TEST SET         #
-        #                           #
-        #############################
-
         print('\n\n#############################')
         print('TEST SET BUILDING')
         print('#############################\n')
@@ -145,8 +134,8 @@ def datasetBuilderMinaceLetter(trainSetProp=0.9):
                 imName = len2Image(imTest)
 
                 # TARGET = manuscript/real image
-                targetColors = wordsNColors[imTest]['col']
-                targetBBxes = wordsNColors[imTest]['tks']
+                targetColors = wordsNColors[imTest]["col"]
+                targetBBxes = wordsNColors[imTest]["tks"]
                 targetImage = imread(color_words + '/' + imTest)
                 target = getAnnotatedBBxes(targetImage, targetColors, targetBBxes)
                 #         fitting the 256x256 format
