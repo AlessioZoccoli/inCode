@@ -37,7 +37,7 @@ def minaceSchema():
     Defining a basic schema for the index.
     fields:
         image: path
-        ccompsHead: Components in the middle of a transcribed word, or single-grams if thei are not in ('s', 'e', 'l', 'm')
+        ccompsHead: Components in the middle of a transcribed word, or single-grams if they are not in ('s', 'e', 'l', 'm')
         ccompsTail: Ending tokens
         ccompsHeadTrace: Positional index of the tokens and their compounds
 
